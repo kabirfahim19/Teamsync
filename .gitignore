@@ -1,0 +1,13 @@
+# Local database settings (has passwords) - never upload
+config/db.php
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp

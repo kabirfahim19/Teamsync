@@ -19,7 +19,11 @@ if (!$project || !is_project_member($pdo, $projectId, $userId)) {
 }
 
 $leaderId = (int) $project['leader_id'];
+$isLeader = $userId === $leaderId;
 $columns  = get_tasks_by_status($pdo, $projectId);
+
+$messages = ['added' => 'Task added to To Do.', 'updated' => 'Task saved.', 'deleted' => 'Task deleted.'];
+$message  = $messages[$_GET['msg'] ?? ''] ?? null;
 
 $stmt = $pdo->prepare('SELECT COUNT(*) FROM project_members WHERE project_id = ?');
 $stmt->execute([$projectId]);
@@ -51,8 +55,15 @@ require __DIR__ . '/includes/header.php';
             <div class="progress" role="progressbar" aria-valuenow="<?= $progress ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Project progress">
                 <div class="progress-fill" style="width: <?= $progress ?>%"></div>
             </div>
+            <?php if ($isLeader): ?>
+                <a class="btn btn-primary btn-inline add-task" href="task_form.php?project=<?= $projectId ?>">+ Add task</a>
+            <?php endif; ?>
         </div>
     </div>
+
+    <?php if ($message): ?>
+        <p class="alert alert-success" role="status"><?= e($message) ?></p>
+    <?php endif; ?>
 
     <div class="board">
         <?php foreach (TASK_STATUSES as $status => $label): ?>
@@ -93,6 +104,9 @@ require __DIR__ . '/includes/header.php';
 
                         <?php if (can_move_task($task, $userId, $leaderId)): ?>
                             <div class="task-actions">
+                                <?php if ($isLeader): ?>
+                                    <a class="btn-move" href="task_form.php?task=<?= (int) $task['task_id'] ?>" aria-label="Edit “<?= e($task['title']) ?>”">Edit</a>
+                                <?php endif; ?>
                                 <?php foreach (task_moves($status) as [$to, $buttonLabel]): ?>
                                     <form method="post" action="api/update_task.php">
                                         <?= csrf_field() ?>

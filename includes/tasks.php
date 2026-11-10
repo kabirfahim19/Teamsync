@@ -59,6 +59,77 @@ function initials(?string $name): string
     return $letters ?: '?';
 }
 
+function get_task(PDO $pdo, int $taskId): ?array
+{
+    $stmt = $pdo->prepare('SELECT task_id, project_id, assignee_id, title, status, priority, due_date FROM tasks WHERE task_id = ?');
+    $stmt->execute([$taskId]);
+    $task = $stmt->fetch();
+    return $task ?: null;
+}
+
+// Check the add/edit form. $memberIds = user ids allowed as assignee.
+// Returns [$cleanData, $errors]. $errors is empty when everything is OK.
+function validate_task_input(array $input, array $memberIds): array
+{
+    $errors = [];
+
+    $title = trim($input['title'] ?? '');
+    if ($title === '') {
+        $errors[] = 'Enter a task title.';
+    } elseif (mb_strlen($title) > 100) {
+        $errors[] = 'The title can be at most 100 characters.';
+    }
+
+    $assignee   = $input['assignee_id'] ?? '';
+    $assigneeId = $assignee === '' ? null : (int) $assignee;
+    if ($assigneeId !== null && !in_array($assigneeId, array_map('intval', $memberIds), true)) {
+        $errors[] = 'Choose a member of this project.';
+    }
+
+    $priority = $input['priority'] ?? 'medium';
+    if (!array_key_exists($priority, TASK_PRIORITIES)) {
+        $errors[] = 'Choose a priority.';
+    }
+
+    $due = trim($input['due_date'] ?? '');
+    if ($due !== '') {
+        $date = DateTime::createFromFormat('!Y-m-d', $due);
+        if (!$date || $date->format('Y-m-d') !== $due) {
+            $errors[] = 'Enter a valid due date.';
+        }
+    }
+
+    $data = [
+        'title'       => $title,
+        'assignee_id' => $assigneeId,
+        'priority'    => $priority,
+        'due_date'    => $due === '' ? null : $due,
+    ];
+    return [$data, $errors];
+}
+
+// New tasks always start in the To Do column.
+function create_task(PDO $pdo, int $projectId, array $data): int
+{
+    $stmt = $pdo->prepare(
+        "INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) VALUES (?, ?, ?, 'todo', ?, ?)"
+    );
+    $stmt->execute([$projectId, $data['assignee_id'], $data['title'], $data['priority'], $data['due_date']]);
+    return (int) $pdo->lastInsertId();
+}
+
+function update_task(PDO $pdo, int $taskId, array $data): void
+{
+    $stmt = $pdo->prepare('UPDATE tasks SET title = ?, assignee_id = ?, priority = ?, due_date = ? WHERE task_id = ?');
+    $stmt->execute([$data['title'], $data['assignee_id'], $data['priority'], $data['due_date'], $taskId]);
+}
+
+function delete_task(PDO $pdo, int $taskId): void
+{
+    $stmt = $pdo->prepare('DELETE FROM tasks WHERE task_id = ?');
+    $stmt->execute([$taskId]);
+}
+
 // The buttons shown on a card: where the task can go from its current column.
 function task_moves(string $status): array
 {

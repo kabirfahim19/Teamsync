@@ -330,6 +330,15 @@ input:focus, select:focus, .btn:focus-visible {
     cursor: pointer;
 }
 .btn-move:hover { border-color: var(--navy); }
+a.btn-move { display: inline-flex; align-items: center; text-decoration: none; }
+
+.add-task { align-self: flex-end; margin-top: 4px; }
+
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 8px; }
+
+.btn-danger { background: transparent; color: var(--error-text); border: 1.5px solid var(--error-text); }
+.btn-danger:hover { background: var(--error-bg); }
+.danger-zone { margin-top: 20px; }
 .btn-move:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 
 @media (max-width: 600px) {

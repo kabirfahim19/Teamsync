@@ -41,6 +41,29 @@ function find_project_by_code(PDO $pdo, string $code): ?array
     return $project ?: null;
 }
 
+function get_project(PDO $pdo, int $projectId): ?array
+{
+    $stmt = $pdo->prepare('SELECT project_id, title, invite_code, leader_id FROM projects WHERE project_id = ?');
+    $stmt->execute([$projectId]);
+    $project = $stmt->fetch();
+    return $project ?: null;
+}
+
+// Everyone in a project (for the "Assign to" list), leader first.
+function get_project_members(PDO $pdo, int $projectId): array
+{
+    $stmt = $pdo->prepare(
+        'SELECT u.user_id, u.name
+         FROM project_members pm
+         JOIN users u ON u.user_id = pm.user_id
+         JOIN projects p ON p.project_id = pm.project_id
+         WHERE pm.project_id = ?
+         ORDER BY u.user_id = p.leader_id DESC, u.name'
+    );
+    $stmt->execute([$projectId]);
+    return $stmt->fetchAll();
+}
+
 function is_project_member(PDO $pdo, int $projectId, int $userId): bool
 {
     $stmt = $pdo->prepare('SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?');

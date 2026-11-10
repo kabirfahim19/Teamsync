@@ -1,7 +1,14 @@
 // Teamsync front-end code.
-// Week 11: Kanban board drag-and-drop goes here.
-// Moving a card will send a request to api/update_task.php.
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Nothing yet.
+    // Ask before dangerous actions, e.g. <form data-confirm="Delete this task?">
+    document.querySelectorAll('form[data-confirm]').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            if (!window.confirm(form.dataset.confirm)) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    // Later: Kanban drag-and-drop, sending requests to api/update_task.php
 });

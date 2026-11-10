@@ -76,7 +76,7 @@ require __DIR__ . '/includes/header.php';
             <ul class="project-list">
                 <?php foreach ($projects as $p): ?>
                     <li>
-                        <b><?= e($p['title']) ?></b>
+                        <a class="project-link" href="board.php?project=<?= (int) $p['project_id'] ?>"><?= e($p['title']) ?></a>
                         <?php if ((int) $p['leader_id'] === (int) $_SESSION['user_id']): ?>
                             <span class="tag">Leader</span>
                         <?php endif; ?>

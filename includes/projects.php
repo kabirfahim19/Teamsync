@@ -21,6 +21,44 @@ function generate_invite_code(PDO $pdo): string
     throw new RuntimeException('Could not make a unique invite code. Try again.');
 }
 
+// Clean up what the user typed: " ts kkk7 " or "tskkk7" both become "TS-KKK7".
+// Returns null if it cannot be a valid invite code.
+function normalize_invite_code(string $input): ?string
+{
+    $code = strtoupper(preg_replace('/[\s-]+/', '', $input));
+    if (!preg_match('/^TS[A-Z0-9]{4}$/', $code)) {
+        return null;
+    }
+    return 'TS-' . substr($code, 2);
+}
+
+// Find a project by its invite code. Returns the project row or null.
+function find_project_by_code(PDO $pdo, string $code): ?array
+{
+    $stmt = $pdo->prepare('SELECT project_id, title, invite_code, leader_id FROM projects WHERE invite_code = ?');
+    $stmt->execute([$code]);
+    $project = $stmt->fetch();
+    return $project ?: null;
+}
+
+function is_project_member(PDO $pdo, int $projectId, int $userId): bool
+{
+    $stmt = $pdo->prepare('SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?');
+    $stmt->execute([$projectId, $userId]);
+    return (bool) $stmt->fetch();
+}
+
+// Add a user to a project. Returns false if they were already a member.
+function join_project(PDO $pdo, int $projectId, int $userId): bool
+{
+    if (is_project_member($pdo, $projectId, $userId)) {
+        return false;
+    }
+    $stmt = $pdo->prepare('INSERT INTO project_members (project_id, user_id) VALUES (?, ?)');
+    $stmt->execute([$projectId, $userId]);
+    return true;
+}
+
 // Create a project and add the leader as its first member.
 // Both inserts happen in one transaction: either both are saved or neither is.
 // Returns ['project_id' => ..., 'invite_code' => ...].

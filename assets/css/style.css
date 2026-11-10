@@ -191,6 +191,11 @@ input:focus, select:focus, .btn:focus-visible {
 
 .btn-inline { width: auto; text-decoration: none; }
 .btn-primary.btn-inline:hover { color: var(--paper); }
+.btn-secondary { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
+.btn-secondary:hover { background: var(--paper-2); color: var(--navy); }
+.head-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.code-input { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+.code-input::placeholder { text-transform: none; letter-spacing: normal; font-weight: 400; }
 
 .stack-form { display: flex; flex-direction: column; gap: 8px; }
 .stack-form label { font-size: 14px; font-weight: 600; }

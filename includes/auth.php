@@ -2,6 +2,8 @@
 // Shared code for every page: session, database connection, login checks and helpers.
 // Put this at the top of each page:  require_once __DIR__ . '/includes/auth.php';
 
+date_default_timezone_set('Asia/Seoul');   // deadlines use Korean time
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

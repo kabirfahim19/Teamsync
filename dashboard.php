@@ -16,15 +16,22 @@ $stmt = $pdo->prepare(
 $stmt->execute([$_SESSION['user_id']]);
 $projects = $stmt->fetchAll();
 
-// Just created a project? Find it in this user's own list (so nobody can see another team's code).
-$created = null;
-if (isset($_GET['created'])) {
+// Just created or joined a project? Find it in this user's own list (so nobody can see another team's code).
+function find_in_list(array $projects, string $param): ?array
+{
+    if (!isset($_GET[$param])) {
+        return null;
+    }
     foreach ($projects as $p) {
-        if ((int) $p['project_id'] === (int) $_GET['created']) {
-            $created = $p;
+        if ((int) $p['project_id'] === (int) $_GET[$param]) {
+            return $p;
         }
     }
+    return null;
 }
+$created = find_in_list($projects, 'created');
+$joined  = find_in_list($projects, 'joined');
+$canJoin = in_array($_SESSION['role'], ['leader', 'member'], true);
 
 $pageTitle = 'Dashboard';
 require __DIR__ . '/includes/header.php';
@@ -36,10 +43,19 @@ require __DIR__ . '/includes/header.php';
             <h1>Hello, <?= e($_SESSION['name']) ?></h1>
             <p class="muted">You are logged in as <b><?= e(role_label($_SESSION['role'])) ?></b>.</p>
         </div>
-        <?php if ($isLeader): ?>
-            <a class="btn btn-primary btn-inline" href="create_project.php">+ Create project</a>
-        <?php endif; ?>
+        <div class="head-actions">
+            <?php if ($canJoin): ?>
+                <a class="btn <?= $isLeader ? 'btn-secondary' : 'btn-primary' ?> btn-inline" href="join_project.php">Join project</a>
+            <?php endif; ?>
+            <?php if ($isLeader): ?>
+                <a class="btn btn-primary btn-inline" href="create_project.php">+ Create project</a>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <?php if ($joined): ?>
+        <p class="alert alert-success" role="status">You joined <b><?= e($joined['title']) ?></b>.</p>
+    <?php endif; ?>
 
     <?php if ($created): ?>
         <div class="alert alert-success" role="status">
@@ -54,7 +70,7 @@ require __DIR__ . '/includes/header.php';
             <?php if ($isLeader): ?>
                 <p class="muted">You have no projects yet. Click <b>Create project</b> to start one.</p>
             <?php else: ?>
-                <p class="muted">You are not in a project yet. Ask your team leader for the invite code.</p>
+                <p class="muted">You are not in a project yet. Get the invite code from your team leader and click <b>Join project</b>.</p>
             <?php endif; ?>
         <?php else: ?>
             <ul class="project-list">

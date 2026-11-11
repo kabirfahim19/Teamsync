@@ -3,6 +3,12 @@
 require_once __DIR__ . '/includes/auth.php';
 require_login();
 
+// Professors have their own page with every team on it.
+if ($_SESSION['role'] === 'professor') {
+    header('Location: professor.php');
+    exit;
+}
+
 $isLeader = $_SESSION['role'] === 'leader';
 
 // Projects this user belongs to

@@ -372,6 +372,29 @@ a.btn-move { display: inline-flex; align-items: center; text-decoration: none; }
     .bar-row { grid-template-columns: 1fr; gap: 6px; }
 }
 
+/* ---------- Professor dashboard ---------- */
+
+.readonly-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: var(--paper-2);
+    color: var(--text-soft);
+    font-size: 14px;
+    font-weight: 600;
+}
+.board-meta .readonly-badge { padding: 2px 10px; font-size: 13px; }
+.stat-warn { color: var(--error-text); }
+.mini-progress { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+.mini-progress .progress { flex: 1; display: block; }
+.mini-progress .progress-fill { display: block; }
+.mini-progress b { width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.row-links { white-space: nowrap; text-align: right; }
+.row-links a { display: inline-flex; align-items: center; min-height: 40px; margin-left: 16px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 8px; }
 
 .btn-danger { background: transparent; color: var(--error-text); border: 1.5px solid var(--error-text); }

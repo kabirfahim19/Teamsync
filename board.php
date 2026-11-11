@@ -5,15 +5,16 @@ require_once __DIR__ . '/includes/projects.php';
 require_once __DIR__ . '/includes/tasks.php';
 require_login();
 
-$projectId = (int) ($_GET['project'] ?? 0);
-$userId    = (int) $_SESSION['user_id'];
+$projectId   = (int) ($_GET['project'] ?? 0);
+$userId      = (int) $_SESSION['user_id'];
+$isProfessor = $_SESSION['role'] === 'professor';
 
 $stmt = $pdo->prepare('SELECT project_id, title, invite_code, leader_id FROM projects WHERE project_id = ?');
 $stmt->execute([$projectId]);
 $project = $stmt->fetch();
 
-// Only members of this project may see its board.
-if (!$project || !is_project_member($pdo, $projectId, $userId)) {
+// Members of this project may see its board; professors may see every board, read-only.
+if (!$project || (!$isProfessor && !is_project_member($pdo, $projectId, $userId))) {
     http_response_code(403);
     exit('You are not a member of this project.');
 }
@@ -37,14 +38,24 @@ $pageTitle = $project['title'] . ' board';
 require __DIR__ . '/includes/header.php';
 ?>
 <main class="container wide">
-    <p class="eyebrow"><a href="dashboard.php">← All projects</a></p>
+    <p class="eyebrow">
+        <?php if ($isProfessor): ?>
+            <a href="professor.php">← All teams</a>
+        <?php else: ?>
+            <a href="dashboard.php">← All projects</a>
+        <?php endif; ?>
+    </p>
 
     <div class="page-head">
         <div>
             <h1><?= e($project['title']) ?></h1>
             <p class="muted board-meta">
                 <span><?= $memberCount ?> <?= $memberCount === 1 ? 'member' : 'members' ?></span>
-                <span>Invite code <span class="code"><?= e($project['invite_code']) ?></span></span>
+                <?php if ($isProfessor): ?>
+                    <span class="readonly-badge">Read-only view</span>
+                <?php else: ?>
+                    <span>Invite code <span class="code"><?= e($project['invite_code']) ?></span></span>
+                <?php endif; ?>
             </p>
         </div>
         <div class="progress-wrap">

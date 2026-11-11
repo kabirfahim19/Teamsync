@@ -55,9 +55,12 @@ require __DIR__ . '/includes/header.php';
             <div class="progress" role="progressbar" aria-valuenow="<?= $progress ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Project progress">
                 <div class="progress-fill" style="width: <?= $progress ?>%"></div>
             </div>
-            <?php if ($isLeader): ?>
-                <a class="btn btn-primary btn-inline add-task" href="task_form.php?project=<?= $projectId ?>">+ Add task</a>
-            <?php endif; ?>
+            <div class="head-actions board-actions">
+                <a class="btn btn-secondary btn-inline" href="report.php?project=<?= $projectId ?>">Contribution report</a>
+                <?php if ($isLeader): ?>
+                    <a class="btn btn-primary btn-inline" href="task_form.php?project=<?= $projectId ?>">+ Add task</a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 

@@ -36,7 +36,7 @@ require __DIR__ . '/includes/header.php';
 <main class="container wide">
     <p class="eyebrow">
         <?php if ($isProfessor): ?>
-            <a href="dashboard.php">← Dashboard</a>
+            <a href="professor.php">← All teams</a>
         <?php else: ?>
             <a href="board.php?project=<?= $projectId ?>">← Back to <?= e($project['title']) ?> board</a>
         <?php endif; ?>

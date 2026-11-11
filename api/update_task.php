@@ -26,6 +26,9 @@ if (!is_logged_in()) {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     reply(405, 'Use POST.', $wantsJson);
 }
+if ($_SESSION['role'] === 'professor') {
+    reply(403, 'Professors have read-only access.', $wantsJson);
+}
 check_csrf();
 
 $taskId = (int) ($_POST['task_id'] ?? 0);

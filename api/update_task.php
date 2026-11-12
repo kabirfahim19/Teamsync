@@ -64,8 +64,10 @@ if ($wantsJson) {
     $stmt = $pdo->prepare("SELECT COUNT(*) AS total, SUM(status = 'done') AS done FROM tasks WHERE project_id = ?");
     $stmt->execute([$task['project_id']]);
     $count = $stmt->fetch();
-    $progress = $count['total'] ? (int) round($count['done'] / $count['total'] * 100) : 0;
-    reply(200, 'Task moved.', true, ['status' => $status, 'progress' => $progress]);
+    $total    = (int) $count['total'];
+    $done     = (int) $count['done'];
+    $progress = $total ? (int) round($done / $total * 100) : 0;
+    reply(200, 'Task moved.', true, ['status' => $status, 'done' => $done, 'total' => $total, 'progress' => $progress]);
 }
 
 header('Location: ../board.php?project=' . (int) $task['project_id']);

@@ -334,6 +334,15 @@ a.btn-move { display: inline-flex; align-items: center; text-decoration: none; }
 
 .board-actions { justify-content: flex-end; margin-top: 4px; }
 
+/* ---------- Drag-and-drop ---------- */
+
+.drag-hint { margin: 16px 0 0; }
+.task-card[draggable="true"] { cursor: grab; }
+.task-card[draggable="true"]:active { cursor: grabbing; }
+.task-card.dragging { opacity: 0.45; }
+.column.drop-target { outline: 2px dashed var(--blue); outline-offset: -4px; background: var(--success-bg); }
+#board-error { margin-top: 16px; }
+
 /* ---------- Contribution report ---------- */
 
 .stats { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }

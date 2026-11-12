@@ -61,10 +61,10 @@ require __DIR__ . '/includes/header.php';
         <div class="progress-wrap">
             <div class="progress-label">
                 <span class="muted">Progress</span>
-                <b><?= $done ?> of <?= $total ?> tasks · <?= $progress ?>%</b>
+                <b id="progress-text"><?= $done ?> of <?= $total ?> tasks · <?= $progress ?>%</b>
             </div>
-            <div class="progress" role="progressbar" aria-valuenow="<?= $progress ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Project progress">
-                <div class="progress-fill" style="width: <?= $progress ?>%"></div>
+            <div class="progress" id="progress-bar" role="progressbar" aria-valuenow="<?= $progress ?>" aria-valuemin="0" aria-valuemax="100" aria-label="Project progress">
+                <div class="progress-fill" id="progress-fill" style="width: <?= $progress ?>%"></div>
             </div>
             <div class="head-actions board-actions">
                 <a class="btn btn-secondary btn-inline" href="report.php?project=<?= $projectId ?>">Contribution report</a>
@@ -79,25 +79,38 @@ require __DIR__ . '/includes/header.php';
         <p class="alert alert-success" role="status"><?= e($message) ?></p>
     <?php endif; ?>
 
-    <div class="board">
+    <p id="board-error" class="alert alert-error" role="alert" hidden></p>
+    <p id="board-status" class="visually-hidden" role="status" aria-live="polite"></p>
+    <?php if (!$isProfessor && $total > 0): ?>
+        <p class="muted small drag-hint">Drag a card to another column, or use the buttons on it.</p>
+    <?php endif; ?>
+
+    <div class="board" data-csrf="<?= e(csrf_token()) ?>">
         <?php foreach (TASK_STATUSES as $status => $label): ?>
-            <section class="column" aria-label="<?= e($label) ?>">
+            <section class="column" data-status="<?= e($status) ?>" aria-label="<?= e($label) ?>">
                 <div class="column-head">
                     <h2><span class="dot dot-<?= e($status) ?>"></span><?= e($label) ?></h2>
                     <span class="count"><?= count($columns[$status]) ?></span>
                 </div>
 
-                <?php if (!$columns[$status]): ?>
-                    <p class="column-empty">No tasks here.</p>
-                <?php endif; ?>
+                <p class="column-empty" <?= $columns[$status] ? 'hidden' : '' ?>>No tasks here.</p>
 
                 <?php foreach ($columns[$status] as $task): ?>
-                    <article class="task-card">
+                    <?php $canMove = can_move_task($task, $userId, $leaderId); ?>
+                    <article class="task-card"
+                             data-task-id="<?= (int) $task['task_id'] ?>"
+                             data-status="<?= e($status) ?>"
+                             data-title="<?= e($task['title']) ?>"
+                             data-priority="<?= e($task['priority']) ?>"
+                             data-priority-label="<?= e(TASK_PRIORITIES[$task['priority']] ?? $task['priority']) ?>"
+                             data-due-label="<?= $task['due_date'] ? e(date('M j', strtotime($task['due_date']))) : '' ?>"
+                             data-late="<?= $task['due_date'] && $task['due_date'] < date('Y-m-d') ? '1' : '0' ?>"
+                             <?= $canMove ? 'draggable="true"' : '' ?>>
                         <div class="task-top">
                             <?php if ($status === 'done'): ?>
-                                <span class="badge badge-done">Completed</span>
+                                <span class="badge badge-done task-badge">Completed</span>
                             <?php else: ?>
-                                <span class="badge badge-<?= e($task['priority']) ?>"><?= e(TASK_PRIORITIES[$task['priority']] ?? $task['priority']) ?></span>
+                                <span class="badge badge-<?= e($task['priority']) ?> task-badge"><?= e(TASK_PRIORITIES[$task['priority']] ?? $task['priority']) ?></span>
                             <?php endif; ?>
                             <span class="muted small">#<?= (int) $task['task_id'] ?></span>
                         </div>
@@ -110,13 +123,11 @@ require __DIR__ . '/includes/header.php';
                                 <?= e($task['assignee_name'] ?? 'Unassigned') ?>
                             </span>
                             <?php if ($task['due_date']): ?>
-                                <span class="<?= is_overdue($task) ? 'overdue' : '' ?>">
-                                    <?= is_overdue($task) ? 'Overdue · ' : 'Due ' ?><?= e(date('M j', strtotime($task['due_date']))) ?>
-                                </span>
+                                <span class="task-due <?= is_overdue($task) ? 'overdue' : '' ?>"><?= is_overdue($task) ? 'Overdue · ' : 'Due ' ?><?= e(date('M j', strtotime($task['due_date']))) ?></span>
                             <?php endif; ?>
                         </div>
 
-                        <?php if (can_move_task($task, $userId, $leaderId)): ?>
+                        <?php if ($canMove): ?>
                             <div class="task-actions">
                                 <?php if ($isLeader): ?>
                                     <a class="btn-move" href="task_form.php?task=<?= (int) $task['task_id'] ?>" aria-label="Edit “<?= e($task['title']) ?>”">Edit</a>

@@ -54,13 +54,19 @@ function e(?string $text): string
     return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
 }
 
-// A hidden form field with this session's CSRF token.
-function csrf_field(): string
+// This session's CSRF token (made once per session).
+function csrf_token(): string
 {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
-    return '<input type="hidden" name="csrf_token" value="' . e($_SESSION['csrf_token']) . '">';
+    return $_SESSION['csrf_token'];
+}
+
+// A hidden form field with this session's CSRF token.
+function csrf_field(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . e(csrf_token()) . '">';
 }
 
 // Stop the request if the form's CSRF token is missing or wrong.

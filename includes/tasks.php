@@ -130,6 +130,43 @@ function delete_task(PDO $pdo, int $taskId): void
     $stmt->execute([$taskId]);
 }
 
+// The user's unfinished tasks that are overdue or due within $days days, in projects they belong to.
+// Overdue first (oldest deadline first), then by deadline.
+function get_due_soon(PDO $pdo, int $userId, int $days = 2): array
+{
+    $limit = (new DateTime('today'))->modify("+$days days")->format('Y-m-d');
+    $stmt = $pdo->prepare(
+        "SELECT t.task_id, t.title, t.due_date, t.status, t.priority, p.project_id, p.title AS project_title
+         FROM tasks t
+         JOIN projects p ON p.project_id = t.project_id
+         JOIN project_members pm ON pm.project_id = t.project_id AND pm.user_id = t.assignee_id
+         WHERE t.assignee_id = ? AND t.status <> 'done'
+           AND t.due_date IS NOT NULL AND t.due_date <= ?
+         ORDER BY t.due_date, CASE t.priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, t.task_id"
+    );
+    $stmt->execute([$userId, $limit]);
+    return $stmt->fetchAll();
+}
+
+// "Overdue · Nov 9", "Due today", "Due tomorrow" or "Due Nov 14".
+function due_label(string $dueDate): string
+{
+    $today = new DateTime('today');
+    $due   = new DateTime($dueDate);
+    $days  = (int) $today->diff($due)->format('%r%a');
+
+    if ($days < 0) {
+        return 'Overdue · ' . $due->format('M j');
+    }
+    if ($days === 0) {
+        return 'Due today';
+    }
+    if ($days === 1) {
+        return 'Due tomorrow';
+    }
+    return 'Due ' . $due->format('M j');
+}
+
 // The buttons shown on a card: where the task can go from its current column.
 function task_moves(string $status): array
 {

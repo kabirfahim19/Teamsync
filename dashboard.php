@@ -22,6 +22,10 @@ $stmt = $pdo->prepare(
 $stmt->execute([$_SESSION['user_id']]);
 $projects = $stmt->fetchAll();
 
+// Deadline reminders: my unfinished tasks that are overdue or due within 2 days (Issue #11)
+require_once __DIR__ . '/includes/tasks.php';
+$dueSoon = get_due_soon($pdo, (int) $_SESSION['user_id'], 2);
+
 // Just created or joined a project? Find it in this user's own list (so nobody can see another team's code).
 function find_in_list(array $projects, string $param): ?array
 {
@@ -69,6 +73,29 @@ require __DIR__ . '/includes/header.php';
             <p class="invite-code"><?= e($created['invite_code']) ?></p>
         </div>
     <?php endif; ?>
+
+    <section class="card reminders" aria-labelledby="due-title">
+        <div class="chart-head">
+            <h2 id="due-title">Due soon</h2>
+            <?php if ($dueSoon): ?>
+                <span class="count"><?= count($dueSoon) ?> <?= count($dueSoon) === 1 ? 'task' : 'tasks' ?></span>
+            <?php endif; ?>
+        </div>
+        <?php if (!$dueSoon): ?>
+            <p class="muted">No deadlines in the next 2 days.</p>
+        <?php else: ?>
+            <ul class="due-list">
+                <?php foreach ($dueSoon as $t): ?>
+                    <?php $label = due_label($t['due_date']); $late = str_starts_with($label, 'Overdue'); ?>
+                    <li class="<?= $late ? 'is-overdue' : '' ?>">
+                        <span class="due-when <?= $late ? 'overdue' : '' ?>"><?= e($label) ?></span>
+                        <span class="due-title"><?= e($t['title']) ?></span>
+                        <a class="due-project" href="board.php?project=<?= (int) $t['project_id'] ?>"><?= e($t['project_title']) ?> board</a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </section>
 
     <section class="card">
         <h2>My projects</h2>

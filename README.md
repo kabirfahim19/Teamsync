@@ -78,6 +78,10 @@ The screenshots use sample data.
 
 ## Try it
 
+**Quick demo:** import `database/demo_data.sql` the same way as `schema.sql`. It adds 3 sample teams. Log in as `alex@demo.test` (Team Leader), `minji@demo.test` (Team Member) or `prof@demo.test` (Professor), password `demo1234`.
+
+**Or step by step:**
+
 1. **Sign up** as a Team Leader and **create a project**. Note its invite code.
 2. In a private window, sign up as a Team Member and **join** with the invite code.
 3. As the leader, **add tasks** and assign them to members.
@@ -116,7 +120,8 @@ Teamsync/
 │   └── js/app.js         Delete confirmation and drag-and-drop
 ├── database/
 │   ├── schema.sql        Tables: users, projects, project_members, tasks
-│   └── sample_tasks.sql  Optional sample tasks
+│   ├── sample_tasks.sql  Optional sample tasks
+│   └── demo_data.sql     Optional demo teams for presentations and testing
 ├── docs/
 │   ├── Teamsync-Requirements-v1.1.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives

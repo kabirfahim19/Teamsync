@@ -10,6 +10,11 @@ $DB_NAME = 'Teamsync';
 $DB_USER = 'root';
 $DB_PASS = '';   // XAMPP default password is empty
 
+// Code a professor must type to sign up with the role Professor.
+// Leave it empty ('') to turn professor sign-up off. Give the code only to the professor.
+// db.php is not on GitHub, so the code stays private.
+$PROFESSOR_CODE = '';
+
 try {
     $pdo = new PDO(
         "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4",

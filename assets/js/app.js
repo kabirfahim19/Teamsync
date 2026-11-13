@@ -11,7 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initBoardDragAndDrop();
+    initProfessorCodeField();
 });
+
+// Sign-up page: show the "Professor code" field only when the role Professor is chosen.
+// Without JavaScript the field simply stays visible.
+function initProfessorCodeField() {
+    const role = document.getElementById('role');
+    const row = document.getElementById('professor-code-row');
+    if (!role || !row) {
+        return;
+    }
+    const update = () => {
+        row.hidden = role.value !== 'professor';
+    };
+    role.addEventListener('change', update);
+    update();
+}
 
 // ---------- Kanban drag-and-drop (Issue #12) ----------
 // Cards the user may move have draggable="true" (the server decides).

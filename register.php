@@ -8,6 +8,11 @@ if (is_logged_in()) {
 }
 
 $roles  = ['leader' => 'Team Leader', 'member' => 'Team Member', 'professor' => 'Professor'];
+
+// Only someone who knows the professor code (set in config/db.php) can sign up as Professor.
+// With no code set, professor sign-up is turned off.
+$professorCode = isset($PROFESSOR_CODE) ? (string) $PROFESSOR_CODE : '';
+
 $errors = [];
 $name   = '';
 $email  = '';
@@ -32,6 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (!array_key_exists($role, $roles)) {
         $errors[] = 'Choose a role.';
+    } elseif ($role === 'professor') {
+        $sentCode = trim($_POST['professor_code'] ?? '');
+        if ($professorCode === '') {
+            $errors[] = 'Professor sign-up is turned off on this site. Ask the team leader to set it up.';
+        } elseif (!hash_equals($professorCode, $sentCode)) {
+            $errors[] = 'The professor code is wrong. Ask the team leader for the code.';
+        }
     }
 
     // Is the email already used?
@@ -94,6 +106,11 @@ require __DIR__ . '/includes/header.php';
                     <option value="<?= e($value) ?>" <?= $role === $value ? 'selected' : '' ?>><?= e($label) ?></option>
                 <?php endforeach; ?>
             </select>
+
+            <div class="field" id="professor-code-row">
+                <label for="professor_code">Professor code <span class="muted">(only for professors)</span></label>
+                <input id="professor_code" name="professor_code" type="password" autocomplete="off">
+            </div>
 
             <button type="submit" class="btn btn-primary">Create account</button>
             <p class="muted center">Already have an account? <a href="index.php">Log in</a></p>

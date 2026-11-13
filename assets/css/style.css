@@ -124,6 +124,8 @@ a:hover { color: var(--navy); }
 .auth-form h2 { font-size: 32px; }
 .auth-form label { margin-top: 10px; font-size: 14px; font-weight: 600; }
 .auth-form .btn { margin-top: 18px; }
+.auth-form .field { display: flex; flex-direction: column; gap: 8px; }
+.auth-form .field[hidden] { display: none; }
 
 input, select {
     height: 48px;

@@ -15,6 +15,17 @@ $DB_PASS = '';   // XAMPP default password is empty
 // db.php is not on GitHub, so the code stays private.
 $PROFESSOR_CODE = '';
 
+// Email reminders the day before a task is due (FR-19). Leave $MAIL_USER empty to turn them off.
+// Gmail: use an App Password (Google Account → Security → 2-Step Verification → App passwords),
+// never your normal Gmail password.
+$MAIL_HOST      = 'smtp.gmail.com';
+$MAIL_PORT      = 587;
+$MAIL_SECURE    = 'tls';
+$MAIL_USER      = '';   // the Gmail address that sends the reminders
+$MAIL_PASS      = '';   // its 16-letter App Password
+$MAIL_FROM_NAME = 'Teamsync';
+$SITE_URL       = '';   // optional, e.g. 'https://teamsync-du.fwh.is' (used for links in the email)
+
 try {
     $pdo = new PDO(
         "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4",

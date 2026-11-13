@@ -120,7 +120,16 @@ function create_task(PDO $pdo, int $projectId, array $data): int
 
 function update_task(PDO $pdo, int $taskId, array $data): void
 {
-    $stmt = $pdo->prepare('UPDATE tasks SET title = ?, assignee_id = ?, priority = ?, due_date = ? WHERE task_id = ?');
+    // A new due date or a new assignee needs a new email reminder (FR-19).
+    $old = get_task($pdo, $taskId);
+    $resetReminder = !$old
+        || $old['due_date'] !== $data['due_date']
+        || (int) $old['assignee_id'] !== (int) $data['assignee_id'];
+
+    $sql = 'UPDATE tasks SET title = ?, assignee_id = ?, priority = ?, due_date = ?'
+         . ($resetReminder ? ', reminder_sent_at = NULL' : '')
+         . ' WHERE task_id = ?';
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([$data['title'], $data['assignee_id'], $data['priority'], $data['due_date'], $taskId]);
 }
 

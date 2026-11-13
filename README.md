@@ -7,7 +7,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
 
-**Status:** Sprints 0–2 are done. 23 of 24 functional requirements and all 9 user stories are merged into `main`. Sprint 3 (Nov 24 – 30) is for testing, diagrams and the final presentation.
+**Status:** All 25 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
 
 ![Kanban board](docs/screenshots/board.png)
 
@@ -33,8 +33,9 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Professor dashboard: every team's progress and overdue tasks, read-only | Professor | #10 |
 | "Due soon" list: your own tasks that are overdue or due within 2 days | Team members | #11 |
 | Drag-and-drop cards between columns, saved without a reload | Team members | #12 |
+| Email reminder to the assignee the day before a task is due | Team members | #28 |
+| Signing up as Professor needs a secret professor code | Professor | #25 |
 
-Not built yet: an email one day before a task's due date (FR-19, a *Could* requirement, kept in the backlog).
 
 ## Screenshots
 
@@ -77,6 +78,7 @@ The screenshots use sample data.
 4. Copy `config/db.example.php` and rename the copy to `config/db.php`.
    The XAMPP defaults (user `root`, empty password) already work. `config/db.php` is in `.gitignore`, so passwords never go to GitHub.
 5. Open `http://localhost/Teamsync`.
+6. Optional, email reminders: in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password). A database made before Nov 14, 2026 needs `database/add_reminders.sql` run once.
 
 ## Try it
 
@@ -107,23 +109,28 @@ Teamsync/
 ├── report.php            Contribution report
 ├── professor.php         All teams (professor only)
 ├── api/
-│   └── update_task.php   Moves a task; used by the buttons and by drag-and-drop
+│   ├── update_task.php   Moves a task; used by the buttons and by drag-and-drop
+│   └── send_reminders.php  Sends due email reminders; the dashboard calls it in the background
 ├── config/
 │   └── db.example.php    Database settings (copy to db.php)
 ├── includes/
 │   ├── auth.php          Session, login and role checks, CSRF, escaping
 │   ├── projects.php      Projects, members, invite codes
-│   ├── tasks.php         Tasks, board columns, reminders
+│   ├── tasks.php         Tasks, board columns, due-soon list
+│   ├── reminders.php     Email reminders (FR-19)
 │   ├── reports.php       Contribution numbers
 │   ├── header.php
 │   └── footer.php
 ├── assets/
 │   ├── css/style.css
-│   └── js/app.js         Delete confirmation and drag-and-drop
+│   └── js/app.js         Delete confirmation, drag-and-drop, sign-up form, reminder call
+├── lib/
+│   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
 │   ├── schema.sql        Tables: users, projects, project_members, tasks
 │   ├── sample_tasks.sql  Optional sample tasks
-│   └── demo_data.sql     Optional demo teams for presentations and testing
+│   ├── demo_data.sql     Optional demo teams for presentations and testing
+│   └── add_reminders.sql Adds the reminder column to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -162,6 +169,8 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - Every page checks the user's role and project membership; professors cannot change anything
 - All output is escaped with `htmlspecialchars()` (no XSS)
 - The session ID is renewed at login
+- Signing up as Professor needs a secret code set in `config/db.php`
+- Mail and database passwords stay in `config/db.php`, which is never uploaded to GitHub
 
 ## Schedule
 

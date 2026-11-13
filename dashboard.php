@@ -46,7 +46,7 @@ $canJoin = in_array($_SESSION['role'], ['leader', 'member'], true);
 $pageTitle = 'Dashboard';
 require __DIR__ . '/includes/header.php';
 ?>
-<main class="container">
+<main class="container" data-send-reminders="<?= e(csrf_token()) ?>">
     <div class="page-head">
         <div>
             <p class="eyebrow">Software Engineering · Fall 2026</p>

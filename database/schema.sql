@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   status      ENUM('todo', 'in_progress', 'done') NOT NULL DEFAULT 'todo',
   priority    ENUM('low', 'medium', 'high')       NOT NULL DEFAULT 'medium',
   due_date    DATE         NULL,
+  reminder_sent_at DATETIME NULL,              -- when the email reminder went out (FR-19)
   FOREIGN KEY (project_id)  REFERENCES projects(project_id) ON DELETE CASCADE,
   FOREIGN KEY (assignee_id) REFERENCES users(user_id)       ON DELETE SET NULL
 ) ENGINE=InnoDB;

@@ -12,7 +12,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initBoardDragAndDrop();
     initProfessorCodeField();
+    sendDueReminders();
 });
+
+// Dashboard: ask the server to email reminders for tasks due soon (FR-19).
+// Runs in the background; the page does not wait for it and shows nothing.
+function sendDueReminders() {
+    const main = document.querySelector('[data-send-reminders]');
+    if (!main) {
+        return;
+    }
+    const body = new FormData();
+    body.append('csrf_token', main.dataset.sendReminders);
+    fetch('api/send_reminders.php', { method: 'POST', headers: { Accept: 'application/json' }, body })
+        .catch(() => {}); // no network: the next visit tries again
+}
 
 // Sign-up page: show the "Professor code" field only when the role Professor is chosen.
 // Without JavaScript the field simply stays visible.

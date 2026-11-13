@@ -5,6 +5,8 @@ Software Engineering team project · Dong-eui University · Fall 2026
 
 Teamsync is a web application where a student team can plan, assign and track its tasks in one place, and where the professor can follow each team's progress.
 
+**Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
+
 **Status:** Sprints 0–2 are done. 23 of 24 functional requirements and all 9 user stories are merged into `main`. Sprint 3 (Nov 24 – 30) is for testing, diagrams and the final presentation.
 
 ![Kanban board](docs/screenshots/board.png)

@@ -2,7 +2,7 @@
 
 Sprints 0 to 2 are done: 23 of 24 functional requirements and all 9 user stories are merged into `main`. Sprint 3 is for testing, diagrams and slides.
 
-Requirements: `docs/Teamsync-Requirements-v1.1.pdf` (SRS v1.1, Nov 12, 2026).
+Requirements: `docs/Teamsync-Requirements-v1.2.pdf` (SRS v1.2, Nov 14, 2026).
 
 ## Summary
 

@@ -125,7 +125,7 @@ Teamsync/
 │   ├── sample_tasks.sql  Optional sample tasks
 │   └── demo_data.sql     Optional demo teams for presentations and testing
 ├── docs/
-│   ├── Teamsync-Requirements-v1.1.pdf   Software Requirements Specification
+│   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
 │   └── screenshots/
 └── tests/                Test cases (Sprint 3)
@@ -142,7 +142,7 @@ Teamsync/
 
 ## How we work
 
-We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.1.pdf`](docs/Teamsync-Requirements-v1.1.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
+We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.2.pdf`](docs/Teamsync-Requirements-v1.2.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
 
 Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each issue:
 

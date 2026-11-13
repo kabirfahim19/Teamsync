@@ -100,7 +100,15 @@ async function moveCard(csrf, card, column) {
         try {
             result = JSON.parse(text);
         } catch {
-            result = { success: false, message: text };
+            // Not JSON: a plain-text error from PHP, or an HTML page (for example a web host's
+            // security check). Show plain text as it is; never show raw HTML to the user.
+            const plain = text.trim();
+            result = {
+                success: false,
+                message: plain && !plain.startsWith('<')
+                    ? plain
+                    : 'Could not save the move. Reload the page and try again.',
+            };
         }
     } catch {
         showBoardError('Could not reach the server. Check that XAMPP is running and try again.');

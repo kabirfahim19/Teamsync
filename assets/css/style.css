@@ -431,6 +431,80 @@ a.btn-move { display: inline-flex; align-items: center; text-decoration: none; }
 
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 8px; }
 
+/* ---------- Task page and comments (FR-28) ---------- */
+
+textarea {
+    min-height: 110px;
+    padding: 12px 14px;
+    border: 1.5px solid #7A8396;
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--navy);
+    font: inherit;
+    resize: vertical;
+}
+textarea:focus { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.task-link { color: var(--navy); text-decoration: none; }
+.task-link:hover { color: var(--blue-dark); text-decoration: underline; }
+.task-top-right { display: flex; align-items: center; gap: 12px; }
+.comment-count { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; font-size: 13px; color: var(--text-soft); text-decoration: none; }
+.comment-count:hover { color: var(--blue-dark); }
+.comment-count svg { width: 16px; height: 16px; }
+.task-link:focus-visible, .comment-count:focus-visible, .link-button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+
+.task-head { margin-top: 8px; }
+.task-head .task-top { justify-content: flex-start; margin-bottom: 12px; }
+.task-head h1 { overflow-wrap: anywhere; }
+.small-badge { padding: 2px 10px; font-size: 13px; }
+.task-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 16px;
+    margin: 20px 0 0;
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+}
+.task-facts div { display: flex; flex-direction: column; gap: 6px; }
+.task-facts dt { font-size: 13px; font-weight: 600; color: var(--text-soft); }
+.task-facts dd { margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.task-head-actions { margin: 16px 0 0; }
+
+.comments h2 { display: flex; align-items: center; gap: 10px; margin: 0; }
+.comment-empty { margin: 16px 0 0; }
+.comment-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.comment {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 12px;
+    padding: 14px 10px;
+    margin: 0 -10px;
+    border-bottom: 1px solid var(--paper-2);
+}
+.comment:last-child { border-bottom: none; }
+.comment:target { background: var(--success-bg); border-radius: 10px; }
+.comment-head { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 15px; }
+.tag-inline { margin: 0; }
+.comment-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment form { margin: 2px 0 0; }
+.link-button {
+    min-height: 32px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--error-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.link-button:hover { text-decoration: underline; }
+.comment-form { margin-top: 16px; padding-top: 20px; border-top: 1px solid var(--line); }
+.comment-form .form-actions { flex-wrap: wrap; gap: 12px 20px; }
+.comment-readonly { margin: 16px 0 0; }
+
 .btn-danger { background: transparent; color: var(--error-text); border: 1.5px solid var(--error-text); }
 .btn-danger:hover { background: var(--error-bg); }
 .danger-zone { margin-top: 20px; }

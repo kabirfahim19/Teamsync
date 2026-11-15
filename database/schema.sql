@@ -1,6 +1,6 @@
 -- Teamsync database
 -- Import this file in phpMyAdmin (Import tab) or run it in the MySQL console.
--- It creates the Teamsync database and the four tables from our ER diagram.
+-- It creates the Teamsync database and all its tables.
 
 CREATE DATABASE IF NOT EXISTS Teamsync
   CHARACTER SET utf8mb4
@@ -68,4 +68,16 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   email        VARCHAR(100) NOT NULL,
   attempted_at DATETIME     NOT NULL,
   INDEX (email, attempted_at)
+) ENGINE=InnoDB;
+
+-- Comments on tasks (FR-28). The author's comments go when the task or the user is deleted.
+CREATE TABLE IF NOT EXISTS task_comments (
+  comment_id INT AUTO_INCREMENT PRIMARY KEY,
+  task_id    INT      NOT NULL,
+  user_id    INT      NOT NULL,
+  body       TEXT     NOT NULL,
+  created_at DATETIME NOT NULL,
+  INDEX (task_id, created_at),
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

@@ -1,5 +1,6 @@
 <?php
 // Kanban board of one project: To Do, In Progress, Done. Issue #3
+// Each card links to its task page with the comments (FR-28).
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/projects.php';
 require_once __DIR__ . '/includes/tasks.php';
@@ -112,10 +113,17 @@ require __DIR__ . '/includes/header.php';
                             <?php else: ?>
                                 <span class="badge badge-<?= e($task['priority']) ?> task-badge"><?= e(TASK_PRIORITIES[$task['priority']] ?? $task['priority']) ?></span>
                             <?php endif; ?>
-                            <span class="muted small">#<?= (int) $task['task_id'] ?></span>
+                            <span class="task-top-right">
+                                <?php $comments = (int) $task['comment_count']; ?>
+                                <a class="comment-count" href="task.php?id=<?= (int) $task['task_id'] ?>#comments" draggable="false"
+                                   aria-label="<?= $comments ?> <?= $comments === 1 ? 'comment' : 'comments' ?> on “<?= e($task['title']) ?>”">
+                                    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><?= $comments ?>
+                                </a>
+                                <span class="muted small">#<?= (int) $task['task_id'] ?></span>
+                            </span>
                         </div>
 
-                        <h3><?= e($task['title']) ?></h3>
+                        <h3><a class="task-link" href="task.php?id=<?= (int) $task['task_id'] ?>" draggable="false"><?= e($task['title']) ?></a></h3>
 
                         <div class="task-meta">
                             <span class="assignee">

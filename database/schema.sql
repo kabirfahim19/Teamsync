@@ -61,3 +61,11 @@ CREATE TABLE IF NOT EXISTS password_resets (
   created_at DATETIME NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Wrong-password tries, for the login block (FR-27). Rows older than a day are deleted.
+CREATE TABLE IF NOT EXISTS login_attempts (
+  attempt_id   INT AUTO_INCREMENT PRIMARY KEY,
+  email        VARCHAR(100) NOT NULL,
+  attempted_at DATETIME     NOT NULL,
+  INDEX (email, attempted_at)
+) ENGINE=InnoDB;

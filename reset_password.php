@@ -2,6 +2,7 @@
 // Choose a new password with the link from the reset email (FR-26).
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/password_resets.php';
+require_once __DIR__ . '/includes/login_guard.php';
 
 $token  = (string) ($_GET['token'] ?? $_POST['token'] ?? '');
 $reset  = find_valid_reset($pdo, $token);
@@ -20,6 +21,7 @@ if ($reset && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         reset_password($pdo, $reset, $password);
+        clear_failed_logins($pdo, $reset['email']);   // a new password ends any login block (FR-27)
         // Log out any session in this browser, so the user logs in with the new password.
         $_SESSION = [];
         session_regenerate_id(true);

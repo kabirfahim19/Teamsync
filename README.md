@@ -7,7 +7,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
 
-**Status:** All 26 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
+**Status:** All 27 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
 
 ![Kanban board](docs/screenshots/board.png)
 
@@ -36,6 +36,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Email reminder to the assignee the day before a task is due | Team members | #28 |
 | Signing up as Professor needs a secret professor code | Professor | #25 |
 | Forgot password: a reset link by email that works once, for one hour | Everyone | #31 |
+| Login protection: 5 wrong passwords block that email for 15 minutes | Everyone | #33 |
 
 
 ## Screenshots
@@ -79,7 +80,7 @@ The screenshots use sample data.
 4. Copy `config/db.example.php` and rename the copy to `config/db.php`.
    The XAMPP defaults (user `root`, empty password) already work. `config/db.php` is in `.gitignore`, so passwords never go to GitHub.
 5. Open `http://localhost/Teamsync`.
-6. Optional, email (reminders and password reset): in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password). A database made before Nov 14, 2026 needs `database/add_reminders.sql` and `database/add_password_resets.sql` run once.
+6. Optional, email (reminders and password reset): in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password). A database made before Nov 14, 2026 needs `database/add_reminders.sql`, `database/add_password_resets.sql` and `database/add_login_attempts.sql` run once.
 
 ## Try it
 
@@ -123,6 +124,7 @@ Teamsync/
 │   ├── mail.php          Sending email over SMTP
 │   ├── reminders.php     Email reminders (FR-19)
 │   ├── password_resets.php  Password reset links (FR-26)
+│   ├── login_guard.php   Blocks password guessing (FR-27)
 │   ├── reports.php       Contribution numbers
 │   ├── header.php
 │   └── footer.php
@@ -132,11 +134,12 @@ Teamsync/
 ├── lib/
 │   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
-│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets
+│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts
 │   ├── sample_tasks.sql  Optional sample tasks
 │   ├── demo_data.sql     Optional demo teams for presentations and testing
 │   ├── add_reminders.sql Adds the reminder column to an older database
-│   └── add_password_resets.sql  Adds the password reset table to an older database
+│   ├── add_password_resets.sql  Adds the password reset table to an older database
+│   └── add_login_attempts.sql   Adds the login protection table to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -153,6 +156,7 @@ Teamsync/
 | `project_members` | Which user is in which project |
 | `tasks` | Tasks on the Kanban board: assignee, status, priority, due date, when the reminder was sent |
 | `password_resets` | Open password reset links (only a hash of each link) |
+| `login_attempts` | Wrong-password tries of the last day, for the login block |
 
 ## How we work
 
@@ -176,6 +180,7 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - Every page checks the user's role and project membership; professors cannot change anything
 - All output is escaped with `htmlspecialchars()` (no XSS)
 - The session ID is renewed at login
+- After 5 wrong passwords for one email within 15 minutes, logging in to it is blocked for 15 minutes
 - Signing up as Professor needs a secret code set in `config/db.php`
 - Password reset links are random, stored only as a hash, work once and expire after one hour; the page never tells whether an email has an account
 - Mail and database passwords stay in `config/db.php`, which is never uploaded to GitHub

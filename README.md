@@ -3,6 +3,8 @@
 **Student Team Project & Task Tracker**
 Software Engineering team project · Dong-eui University · Fall 2026
 
+[![Tests](https://github.com/kabirfahim19/Teamsync/actions/workflows/tests.yml/badge.svg)](https://github.com/kabirfahim19/Teamsync/actions/workflows/tests.yml)
+
 Teamsync is a web application where a student team can plan, assign and track its tasks in one place, and where the professor can follow each team's progress.
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
@@ -96,6 +98,24 @@ The screenshots use sample data.
 5. Open the **Contribution report** from the board.
 6. Sign up as a Professor to see **All teams**, then open any board or report (read-only).
 
+## Testing
+
+**Automated tests** check the app's rules without a browser: invite codes, task checks, who may move a task, overdue and due-soon dates, email reminders, the contribution report, password reset links and the login block. Each test names its requirement or test case from the SRS, for example `TC-07` or `FR-27`.
+
+Run them from the Teamsync folder:
+
+```bash
+php tests/run.php
+# Mac XAMPP:     /Applications/XAMPP/xamppfiles/bin/php tests/run.php
+# Windows XAMPP: C:\xampp\php\php.exe tests\run.php
+```
+
+The tests build a new SQLite database in memory, so they never touch your MySQL data and XAMPP does not need to be running. GitHub runs them on every push and pull request: see the **Actions** tab or the badge at the top of this page. A pull request with a red cross is not merged.
+
+When you add a table or a column to `database/schema.sql`, add it to `tests/sqlite_schema.sql` too. A test checks that the two files match.
+
+**Manual tests:** the pages themselves (forms, HTTP 403 answers, drag-and-drop) are tested by hand with test cases TC-01 to TC-24 in the SRS.
+
 ## Folder structure
 
 ```
@@ -144,7 +164,11 @@ Teamsync/
 │   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
 │   └── screenshots/
-└── tests/                Test cases (Sprint 3)
+├── tests/
+│   ├── run.php           Automated tests: php tests/run.php
+│   └── sqlite_schema.sql The tables, for the tests' in-memory database
+└── .github/workflows/
+    └── tests.yml         Runs the tests on GitHub at every push
 ```
 
 ## Database
@@ -166,11 +190,12 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 
 1. Get the latest code: `git checkout main` and `git pull`
 2. Make a branch: `git checkout -b feature/<task-name>`
-3. Commit: `git add .` then `git commit -m "Add login form (closes #n)"`
-4. Push: `git push -u origin feature/<task-name>`
-5. Open a **Pull Request**, review it and merge it into `main`. `closes #n` closes the issue.
+3. Run the tests: `php tests/run.php` (everything must pass)
+4. Commit: `git add .` then `git commit -m "Add login form (closes #n)"`
+5. Push: `git push -u origin feature/<task-name>`
+6. Open a **Pull Request**. Wait for the green tick from the tests, review it and merge it into `main`. `closes #n` closes the issue.
 
-**Definition of Done:** every acceptance criterion passes, the change is merged into `main` through a pull request, and the issue is closed.
+**Definition of Done:** every acceptance criterion passes, the automated tests pass, the change is merged into `main` through a pull request, and the issue is closed.
 
 ## Security
 

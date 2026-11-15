@@ -1,5 +1,6 @@
 -- Demo data for presentations and testing.
--- Adds 3 sample teams (12 users, 26 tasks). Every demo account uses the password: demo1234
+-- Adds 3 sample teams (12 users, 26 tasks, 6 comments). Every demo account uses the password: demo1234
+-- The database needs the task_comments table (schema.sql, or database/add_task_comments.sql for an older database).
 -- Running it again first removes the old demo data, so it always starts clean.
 -- Your own accounts and projects are not touched.
 --
@@ -89,3 +90,15 @@ INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) V
   (@p3, @eunbi,   'Arrival time screen',   'todo',        'medium', CURDATE() + INTERVAL 3 DAY),
   (@p3, @ana,     'Favourite stops',       'todo',        'low',    CURDATE() + INTERVAL 7 DAY),
   (@p3, @hyunwoo, 'Test plan',             'todo',        'medium', CURDATE() + INTERVAL 5 DAY);
+
+-- 6. Comments on Team 1 tasks (FR-28)
+SET @cart  = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Order cart and checkout');
+SET @tests = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Write test cases');
+SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw the UML class diagram');
+INSERT INTO task_comments (task_id, user_id, body, created_at) VALUES
+  (@cart,  @daniel, 'The cart works. I still need the total price with the student discount.', TIMESTAMP(CURDATE() - INTERVAL 1 DAY, '15:20:00')),
+  (@cart,  @alex,   'The discount is 10% with a student card. Can you finish it by tomorrow?',  TIMESTAMP(CURDATE() - INTERVAL 1 DAY, '16:05:00')),
+  (@cart,  @daniel, 'Yes, I will push it tonight.',                                              TIMESTAMP(CURDATE(), '09:40:00')),
+  (@tests, @sara,   'I am waiting for the checkout page, so I will test login and the menu first.', TIMESTAMP(CURDATE() - INTERVAL 2 DAY, '11:00:00')),
+  (@tests, @minji,  'I can help with the menu page tests.',                                      TIMESTAMP(CURDATE() - INTERVAL 2 DAY, '13:30:00')),
+  (@uml,   @minji,  'The first version is in our shared folder. Comments welcome!',              TIMESTAMP(CURDATE() - INTERVAL 3 DAY, '20:15:00'));

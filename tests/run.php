@@ -49,6 +49,7 @@ require_once APP_DIR . '/includes/mail.php';
 require_once APP_DIR . '/includes/reminders.php';
 require_once APP_DIR . '/includes/password_resets.php';
 require_once APP_DIR . '/includes/login_guard.php';
+require_once APP_DIR . '/includes/comments.php';
 
 
 // ======================================================================
@@ -702,6 +703,87 @@ db_test('FR-27  tries older than a day are deleted', function (PDO $pdo) {
     record_failed_login($pdo, 'alex@demo.test');
     check_same(0, (int) value($pdo, "SELECT COUNT(*) FROM login_attempts WHERE email = 'old@demo.test'"), 'old rows');
     check_same(1, (int) value($pdo, "SELECT COUNT(*) FROM login_attempts WHERE email = 'alex@demo.test'"), 'new row');
+});
+
+
+group('Task comments (FR-28)');
+
+test('FR-28  an empty or too long comment is refused', function () {
+    check_same(['Write a comment first.'], validate_comment('')[1], 'empty');
+    check_same(['Write a comment first.'], validate_comment("  \n\t ")[1], 'only spaces');
+    check_same(['A comment can be at most 1000 characters.'], validate_comment(str_repeat('a', 1001))[1], '1001 letters');
+    check_same([], validate_comment(str_repeat('a', 1000))[1], '1000 letters');
+    check_same([], validate_comment(str_repeat('가', 1000))[1], '1000 Korean letters');
+});
+
+test('FR-28  a comment is trimmed and keeps its line breaks', function () {
+    check_same(["First line\nSecond line", []], validate_comment("  First line\r\nSecond line \n"));
+    check_same(['<b>Hi</b> & bye', []], validate_comment('<b>Hi</b> & bye'), 'stored as typed, escaped only when shown');
+});
+
+db_test('FR-28  comments are listed oldest first with their author', function (PDO $pdo) {
+    $team = make_team($pdo);
+    $task = add_task($pdo, $team['pid'], $team['alex'], 'Slides', 'todo', day(1));
+    $first = add_comment($pdo, $task, $team['alex'], 'I started the slides.');
+    $pdo->exec("UPDATE task_comments SET created_at = '" . minutes_ago(30) . "' WHERE comment_id = $first");
+    add_comment($pdo, $task, $team['leader'], 'Great, thanks!');
+    $other = add_task($pdo, $team['pid'], $team['minji'], 'Report', 'todo');
+    add_comment($pdo, $other, $team['minji'], 'Not on the slides task.');
+
+    $comments = get_comments($pdo, $task);
+    check_same(['I started the slides.', 'Great, thanks!'], array_column($comments, 'body'), 'comments');
+    check_same(['Alex Kim', 'Yuna Park'], array_column($comments, 'author_name'), 'authors');
+});
+
+db_test('FR-28  each card on the board shows its number of comments', function (PDO $pdo) {
+    $team  = make_team($pdo);
+    $busy  = add_task($pdo, $team['pid'], $team['alex'], 'Busy task', 'in_progress');
+    $quiet = add_task($pdo, $team['pid'], $team['alex'], 'Quiet task', 'in_progress');
+    add_comment($pdo, $busy, $team['alex'], 'One');
+    add_comment($pdo, $busy, $team['minji'], 'Two');
+    $counts = array_column(get_tasks_by_status($pdo, $team['pid'])['in_progress'], 'comment_count', 'title');
+    check_same(2, (int) $counts['Busy task'], 'busy task');
+    check_same(0, (int) $counts['Quiet task'], 'quiet task');
+});
+
+test('FR-28  only the author or the team leader may delete a comment', function () {
+    $leader  = 1;
+    $comment = ['user_id' => 5];
+    check_same(true, can_delete_comment($comment, 5, $leader), 'author');
+    check_same(true, can_delete_comment(['user_id' => '5'], 5, $leader), 'author id as text (MySQL)');
+    check_same(true, can_delete_comment($comment, 1, $leader), 'leader');
+    check_same(false, can_delete_comment($comment, 7, $leader), 'another member');
+});
+
+db_test('FR-28  a deleted comment is gone, and deleting a task deletes its comments', function (PDO $pdo) {
+    $team = make_team($pdo);
+    $task = add_task($pdo, $team['pid'], $team['alex'], 'Slides');
+    $keep = add_comment($pdo, $task, $team['alex'], 'Keep me');
+    $gone = add_comment($pdo, $task, $team['minji'], 'Delete me');
+    delete_comment($pdo, $gone);
+    check_same(null, get_comment($pdo, $gone), 'deleted comment');
+    check_same('Keep me', get_comment($pdo, $keep)['body'], 'other comment');
+
+    delete_task($pdo, $task);
+    check_same(0, (int) value($pdo, 'SELECT COUNT(*) FROM task_comments'), 'comments after deleting the task');
+});
+
+test('FR-28  comment times read "Today, 4:05 PM", "Yesterday, 9:30 AM" or "Nov 12, 2:15 PM"', function () {
+    check_same('Today, 4:05 PM', comment_time(day(0) . ' 16:05:00'));
+    check_same('Yesterday, 9:30 AM', comment_time(day(-1) . ' 09:30:00'));
+    $older = day(-3) . ' 14:15:00';
+    check_same((new DateTime($older))->format('M j') . ', 2:15 PM', comment_time($older));
+});
+
+db_test('FR-28  the task page gets the task with its assignee', function (PDO $pdo) {
+    $team = make_team($pdo);
+    $mine = add_task($pdo, $team['pid'], $team['minji'], 'Draw UML', 'in_progress', day(3), 'high');
+    $free = add_task($pdo, $team['pid'], null, 'Nobody yet');
+    $task = get_task_details($pdo, $mine);
+    check_same(['Draw UML', 'in_progress', 'high', day(3), 'Minji Lee'],
+               [$task['title'], $task['status'], $task['priority'], $task['due_date'], $task['assignee_name']]);
+    check_same(null, get_task_details($pdo, $free)['assignee_name'], 'unassigned');
+    check_same(null, get_task_details($pdo, 999), 'missing task');
 });
 
 

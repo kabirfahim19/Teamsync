@@ -9,7 +9,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
 
-**Status:** All 27 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
+**Status:** All 28 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
 
 ![Kanban board](docs/screenshots/board.png)
 
@@ -39,6 +39,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Signing up as Professor needs a secret professor code | Professor | #25 |
 | Forgot password: a reset link by email that works once, for one hour | Everyone | #31 |
 | Login protection: 5 wrong passwords block that email for 15 minutes | Everyone | #33 |
+| Task comments: each task has its own page where the team discusses it; professors can read along | Team members, Professor | #37 |
 
 
 ## Screenshots
@@ -78,11 +79,13 @@ The screenshots use sample data.
    git clone https://github.com/kabirfahim19/Teamsync.git
    ```
 3. Open `http://localhost/phpmyadmin` → **Import** → choose `database/schema.sql` → **Import**.
-   This creates the `Teamsync` database and its four tables.
+   This creates the `Teamsync` database and all its tables.
 4. Copy `config/db.example.php` and rename the copy to `config/db.php`.
    The XAMPP defaults (user `root`, empty password) already work. `config/db.php` is in `.gitignore`, so passwords never go to GitHub.
 5. Open `http://localhost/Teamsync`.
-6. Optional, email (reminders and password reset): in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password). A database made before Nov 14, 2026 needs `database/add_reminders.sql`, `database/add_password_resets.sql` and `database/add_login_attempts.sql` run once.
+6. Optional, email (reminders and password reset): in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password).
+
+**Updating an older copy:** a database made with an older `schema.sql` needs the newer tables. Run each of these once, in phpMyAdmin's SQL tab, if your database does not have it yet: `database/add_reminders.sql`, `add_password_resets.sql`, `add_login_attempts.sql`, `add_task_comments.sql`.
 
 ## Try it
 
@@ -95,8 +98,9 @@ The screenshots use sample data.
 3. As the leader, **add tasks** and assign them to members.
    Optional: `database/sample_tasks.sql` adds 6 sample tasks to the newest project.
 4. **Drag** a card to another column, or use its buttons.
-5. Open the **Contribution report** from the board.
-6. Sign up as a Professor to see **All teams**, then open any board or report (read-only).
+5. Click a task's title to open it and **write a comment**. The card on the board shows how many comments it has.
+6. Open the **Contribution report** from the board.
+7. Sign up as a Professor to see **All teams**, then open any board, task or report (read-only).
 
 ## Testing
 
@@ -129,6 +133,7 @@ Teamsync/
 ├── create_project.php    New project with invite code
 ├── join_project.php      Join with an invite code
 ├── board.php             Kanban board of one project
+├── task.php              One task and its comments
 ├── task_form.php         Add, edit or delete a task (leader only)
 ├── report.php            Contribution report
 ├── professor.php         All teams (professor only)
@@ -145,6 +150,7 @@ Teamsync/
 │   ├── reminders.php     Email reminders (FR-19)
 │   ├── password_resets.php  Password reset links (FR-26)
 │   ├── login_guard.php   Blocks password guessing (FR-27)
+│   ├── comments.php      Task comments (FR-28)
 │   ├── reports.php       Contribution numbers
 │   ├── header.php
 │   └── footer.php
@@ -154,12 +160,13 @@ Teamsync/
 ├── lib/
 │   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
-│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts
+│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts, task_comments
 │   ├── sample_tasks.sql  Optional sample tasks
 │   ├── demo_data.sql     Optional demo teams for presentations and testing
 │   ├── add_reminders.sql Adds the reminder column to an older database
 │   ├── add_password_resets.sql  Adds the password reset table to an older database
-│   └── add_login_attempts.sql   Adds the login protection table to an older database
+│   ├── add_login_attempts.sql   Adds the login protection table to an older database
+│   └── add_task_comments.sql    Adds the task comments table to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -181,6 +188,7 @@ Teamsync/
 | `tasks` | Tasks on the Kanban board: assignee, status, priority, due date, when the reminder was sent |
 | `password_resets` | Open password reset links (only a hash of each link) |
 | `login_attempts` | Wrong-password tries of the last day, for the login block |
+| `task_comments` | Comments on tasks: who wrote what, and when |
 
 ## How we work
 

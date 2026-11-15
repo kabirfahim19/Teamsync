@@ -13,12 +13,13 @@ const TASK_PRIORITIES = [
     'low'    => 'Low',
 ];
 
-// All tasks of a project, with the assignee's name, grouped by status.
+// All tasks of a project, with the assignee's name and the number of comments, grouped by status.
 // Returns ['todo' => [...], 'in_progress' => [...], 'done' => [...]].
 function get_tasks_by_status(PDO $pdo, int $projectId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT t.task_id, t.title, t.status, t.priority, t.due_date, t.assignee_id, u.name AS assignee_name
+        "SELECT t.task_id, t.title, t.status, t.priority, t.due_date, t.assignee_id, u.name AS assignee_name,
+                (SELECT COUNT(*) FROM task_comments c WHERE c.task_id = t.task_id) AS comment_count
          FROM tasks t
          LEFT JOIN users u ON u.user_id = t.assignee_id
          WHERE t.project_id = ?
@@ -65,6 +66,19 @@ function get_task(PDO $pdo, int $taskId): ?array
     $stmt->execute([$taskId]);
     $task = $stmt->fetch();
     return $task ?: null;
+}
+
+// One task with its assignee's name, for the task page.
+function get_task_details(PDO $pdo, int $taskId): ?array
+{
+    $stmt = $pdo->prepare(
+        'SELECT t.task_id, t.project_id, t.assignee_id, t.title, t.status, t.priority, t.due_date, u.name AS assignee_name
+         FROM tasks t
+         LEFT JOIN users u ON u.user_id = t.assignee_id
+         WHERE t.task_id = ?'
+    );
+    $stmt->execute([$taskId]);
+    return $stmt->fetch() ?: null;
 }
 
 // Check the add/edit form. $memberIds = user ids allowed as assignee.

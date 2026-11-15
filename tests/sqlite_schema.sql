@@ -51,3 +51,12 @@ CREATE TABLE login_attempts (
   attempted_at TEXT NOT NULL
 );
 CREATE INDEX login_attempts_email ON login_attempts (email, attempted_at);
+
+CREATE TABLE task_comments (
+  comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX task_comments_task ON task_comments (task_id, created_at);

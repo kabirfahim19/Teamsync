@@ -1,34 +1,46 @@
 <?php
 // Log in page
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/login_guard.php';
 
 if (is_logged_in()) {
     header('Location: dashboard.php');
     exit;
 }
 
-$error = '';
-$email = '';
+$error  = '';
+$email  = '';
+$locked = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     check_csrf();
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    // Prepared statement: the email is sent separately from the SQL (no SQL injection)
-    $stmt = $pdo->prepare('SELECT user_id, name, password_hash, role FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    // Too many wrong passwords for this email: do not even check the password (FR-27).
+    $wait = login_wait_minutes($pdo, $email);
+    if ($wait > 0) {
+        $locked = true;
+        $error  = 'Too many wrong passwords for this email. Try again in ' . $wait
+                . ($wait === 1 ? ' minute.' : ' minutes.');
+    } else {
+        // Prepared statement: the email is sent separately from the SQL (no SQL injection)
+        $stmt = $pdo->prepare('SELECT user_id, name, password_hash, role FROM users WHERE email = ?');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-    if ($user && password_verify($password, $user['password_hash'])) {
-        session_regenerate_id(true);   // new session id after login
-        $_SESSION['user_id'] = $user['user_id'];
-        $_SESSION['name']    = $user['name'];
-        $_SESSION['role']    = $user['role'];
-        header('Location: dashboard.php');
-        exit;
+        if ($user && password_verify($password, $user['password_hash'])) {
+            clear_failed_logins($pdo, $email);
+            session_regenerate_id(true);   // new session id after login
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['name']    = $user['name'];
+            $_SESSION['role']    = $user['role'];
+            header('Location: dashboard.php');
+            exit;
+        }
+        record_failed_login($pdo, $email);
+        $error = 'Wrong email or password.';
     }
-    $error = 'Wrong email or password.';
 }
 
 $pageTitle  = 'Log in';
@@ -58,7 +70,10 @@ require __DIR__ . '/includes/header.php';
                 <p class="alert alert-success" role="status">Password changed. Log in with your new password.</p>
             <?php endif; ?>
             <?php if ($error): ?>
-                <p class="alert alert-error" role="alert"><?= e($error) ?></p>
+                <p class="alert alert-error" role="alert">
+                    <?= e($error) ?>
+                    <?php if ($locked): ?><br><a href="forgot_password.php">Reset your password</a><?php endif; ?>
+                </p>
             <?php endif; ?>
 
             <label for="email">Email</label>

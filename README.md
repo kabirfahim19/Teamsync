@@ -7,7 +7,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
 
-**Status:** All 25 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
+**Status:** All 26 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
 
 ![Kanban board](docs/screenshots/board.png)
 
@@ -35,6 +35,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Drag-and-drop cards between columns, saved without a reload | Team members | #12 |
 | Email reminder to the assignee the day before a task is due | Team members | #28 |
 | Signing up as Professor needs a secret professor code | Professor | #25 |
+| Forgot password: a reset link by email that works once, for one hour | Everyone | #31 |
 
 
 ## Screenshots
@@ -78,7 +79,7 @@ The screenshots use sample data.
 4. Copy `config/db.example.php` and rename the copy to `config/db.php`.
    The XAMPP defaults (user `root`, empty password) already work. `config/db.php` is in `.gitignore`, so passwords never go to GitHub.
 5. Open `http://localhost/Teamsync`.
-6. Optional, email reminders: in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password). A database made before Nov 14, 2026 needs `database/add_reminders.sql` run once.
+6. Optional, email (reminders and password reset): in `config/db.php` fill in `$MAIL_USER` (a Gmail address) and `$MAIL_PASS` (its App Password). A database made before Nov 14, 2026 needs `database/add_reminders.sql` and `database/add_password_resets.sql` run once.
 
 ## Try it
 
@@ -100,6 +101,8 @@ The screenshots use sample data.
 Teamsync/
 ├── index.php             Log in
 ├── register.php          Sign up
+├── forgot_password.php   Ask for a password reset link
+├── reset_password.php    Choose a new password with the link
 ├── logout.php            Log out (POST only)
 ├── dashboard.php         My projects and "Due soon"
 ├── create_project.php    New project with invite code
@@ -117,7 +120,9 @@ Teamsync/
 │   ├── auth.php          Session, login and role checks, CSRF, escaping
 │   ├── projects.php      Projects, members, invite codes
 │   ├── tasks.php         Tasks, board columns, due-soon list
+│   ├── mail.php          Sending email over SMTP
 │   ├── reminders.php     Email reminders (FR-19)
+│   ├── password_resets.php  Password reset links (FR-26)
 │   ├── reports.php       Contribution numbers
 │   ├── header.php
 │   └── footer.php
@@ -127,10 +132,11 @@ Teamsync/
 ├── lib/
 │   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
-│   ├── schema.sql        Tables: users, projects, project_members, tasks
+│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets
 │   ├── sample_tasks.sql  Optional sample tasks
 │   ├── demo_data.sql     Optional demo teams for presentations and testing
-│   └── add_reminders.sql Adds the reminder column to an older database
+│   ├── add_reminders.sql Adds the reminder column to an older database
+│   └── add_password_resets.sql  Adds the password reset table to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -145,7 +151,8 @@ Teamsync/
 | `users` | Everyone who can log in, with a role |
 | `projects` | One row per team project, with its invite code and leader |
 | `project_members` | Which user is in which project |
-| `tasks` | Tasks on the Kanban board: assignee, status, priority, due date |
+| `tasks` | Tasks on the Kanban board: assignee, status, priority, due date, when the reminder was sent |
+| `password_resets` | Open password reset links (only a hash of each link) |
 
 ## How we work
 
@@ -170,6 +177,7 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - All output is escaped with `htmlspecialchars()` (no XSS)
 - The session ID is renewed at login
 - Signing up as Professor needs a secret code set in `config/db.php`
+- Password reset links are random, stored only as a hash, work once and expire after one hour; the page never tells whether an email has an account
 - Mail and database passwords stay in `config/db.php`, which is never uploaded to GitHub
 
 ## Schedule

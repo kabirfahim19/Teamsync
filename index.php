@@ -54,6 +54,9 @@ require __DIR__ . '/includes/header.php';
             <?php if (isset($_GET['registered'])): ?>
                 <p class="alert alert-success" role="status">Account created. You can log in now.</p>
             <?php endif; ?>
+            <?php if (isset($_GET['reset'])): ?>
+                <p class="alert alert-success" role="status">Password changed. Log in with your new password.</p>
+            <?php endif; ?>
             <?php if ($error): ?>
                 <p class="alert alert-error" role="alert"><?= e($error) ?></p>
             <?php endif; ?>
@@ -63,6 +66,7 @@ require __DIR__ . '/includes/header.php';
 
             <label for="password">Password</label>
             <input id="password" name="password" type="password" required autocomplete="current-password">
+            <p class="small forgot-link"><a href="forgot_password.php">Forgot your password?</a></p>
 
             <button type="submit" class="btn btn-primary">Log in</button>
             <p class="muted center">New to Teamsync? <a href="register.php">Create an account</a></p>

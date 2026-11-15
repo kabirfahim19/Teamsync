@@ -17,14 +17,5 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 check_csrf();
 
-// Links in the email point to this site. $SITE_URL in config/db.php wins; otherwise use this request's address.
-if (!empty($SITE_URL)) {
-    $siteUrl = (string) $SITE_URL;
-} else {
-    $https   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-    $base    = rtrim(str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
-    $siteUrl = ($https ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $base;
-}
-
-echo json_encode(send_due_reminders($pdo, $siteUrl));
+// Links in the email point to this site (this file is one folder below the app).
+echo json_encode(send_due_reminders($pdo, site_url(1)));

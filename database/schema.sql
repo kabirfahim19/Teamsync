@@ -51,3 +51,13 @@ CREATE TABLE IF NOT EXISTS tasks (
   FOREIGN KEY (project_id)  REFERENCES projects(project_id) ON DELETE CASCADE,
   FOREIGN KEY (assignee_id) REFERENCES users(user_id)       ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- Password reset links (FR-26). Only a hash of each link's token is stored.
+CREATE TABLE IF NOT EXISTS password_resets (
+  reset_id   INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT      NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;

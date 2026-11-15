@@ -6,30 +6,7 @@
 // Each call sends at most a few emails: tasks due today or tomorrow that are not done and got no reminder yet.
 // A task is "claimed" (reminder_sent_at is set) before its email goes out, so it is never sent twice.
 
-require_once __DIR__ . '/../lib/PHPMailer/Exception.php';
-require_once __DIR__ . '/../lib/PHPMailer/PHPMailer.php';
-require_once __DIR__ . '/../lib/PHPMailer/SMTP.php';
-
-use PHPMailer\PHPMailer\Exception as MailException;
-use PHPMailer\PHPMailer\PHPMailer;
-
-// The SMTP settings from config/db.php, or null when email is not set up (then reminders are off).
-function mail_settings(): ?array
-{
-    global $MAIL_HOST, $MAIL_PORT, $MAIL_SECURE, $MAIL_USER, $MAIL_PASS, $MAIL_FROM_NAME;
-
-    if (empty($MAIL_HOST) || empty($MAIL_USER) || empty($MAIL_PASS)) {
-        return null;
-    }
-    return [
-        'host'      => (string) $MAIL_HOST,
-        'port'      => (int) ($MAIL_PORT ?? 587),
-        'secure'    => (string) ($MAIL_SECURE ?? 'tls'),   // 'tls' (port 587), 'ssl' (port 465) or '' (no encryption)
-        'user'      => (string) $MAIL_USER,
-        'pass'      => (string) $MAIL_PASS,
-        'from_name' => (string) ($MAIL_FROM_NAME ?? 'Teamsync'),
-    ];
-}
+require_once __DIR__ . '/mail.php';
 
 // Unfinished tasks due today or tomorrow that still need a reminder, with the assignee's name and email.
 function get_reminders_due(PDO $pdo, int $limit): array
@@ -67,12 +44,6 @@ function release_reminder(PDO $pdo, int $taskId): void
     $stmt->execute([$taskId]);
 }
 
-// Addresses that can never receive mail (reserved test domains, like the demo accounts).
-function is_undeliverable(string $email): bool
-{
-    return (bool) preg_match('/\.(test|example|invalid|localhost)$/i', $email);
-}
-
 // Subject, HTML body and plain-text body of one reminder.
 function reminder_email(array $task, string $siteUrl): array
 {
@@ -100,12 +71,10 @@ function reminder_email(array $task, string $siteUrl): array
 // Send up to $limit reminders. Returns ['enabled' => bool, 'sent' => n, 'skipped' => n, 'failed' => n].
 function send_due_reminders(PDO $pdo, string $siteUrl, int $limit = 5): array
 {
-    $result   = ['enabled' => false, 'sent' => 0, 'skipped' => 0, 'failed' => 0];
-    $settings = mail_settings();
-    if (!$settings) {
+    $result = ['enabled' => mail_settings() !== null, 'sent' => 0, 'skipped' => 0, 'failed' => 0];
+    if (!$result['enabled']) {
         return $result;   // email not set up: reminders are off, nothing else changes
     }
-    $result['enabled'] = true;
 
     foreach (get_reminders_due($pdo, $limit) as $task) {
         if (!claim_reminder($pdo, (int) $task['task_id'])) {
@@ -117,30 +86,11 @@ function send_due_reminders(PDO $pdo, string $siteUrl, int $limit = 5): array
         }
 
         [$subject, $html, $text] = reminder_email($task, $siteUrl);
-        $mail = new PHPMailer(true);
-        try {
-            $mail->isSMTP();
-            $mail->Host       = $settings['host'];
-            $mail->Port       = $settings['port'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $settings['user'];
-            $mail->Password   = $settings['pass'];
-            $mail->SMTPSecure = $settings['secure'];
-            $mail->SMTPAutoTLS = $settings['secure'] !== '';
-            $mail->Timeout    = 8;   // free hosting stops a PHP request after about 10 seconds
-            $mail->CharSet    = 'UTF-8';
-            $mail->setFrom($settings['user'], $settings['from_name']);
-            $mail->addAddress($task['assignee_email'], $task['assignee_name']);
-            $mail->Subject = $subject;
-            $mail->isHTML(true);
-            $mail->Body    = $html;
-            $mail->AltBody = $text;
-            $mail->send();
+        if (send_email($task['assignee_email'], $task['assignee_name'], $subject, $html, $text)) {
             $result['sent']++;
-        } catch (MailException $ex) {
+        } else {
             release_reminder($pdo, (int) $task['task_id']);
             $result['failed']++;
-            error_log('Teamsync reminder for task ' . $task['task_id'] . ' failed: ' . $mail->ErrorInfo);
             break;   // the mail server is not answering: stop and try again on the next visit
         }
     }

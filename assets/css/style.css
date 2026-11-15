@@ -126,6 +126,7 @@ a:hover { color: var(--navy); }
 .auth-form .btn { margin-top: 18px; }
 .auth-form .field { display: flex; flex-direction: column; gap: 8px; }
 .auth-form .field[hidden] { display: none; }
+.auth-form .forgot-link { margin: 0; text-align: right; }
 
 input, select {
     height: 48px;

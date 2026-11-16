@@ -1,8 +1,8 @@
 # Teamsync – Sprint Reviews and Retrospectives
 
-Sprints 0 to 2 are done: 23 of 24 functional requirements and all 9 user stories are merged into `main`. Sprint 3 is for testing, diagrams and slides.
+Sprints 0 to 2 are done and Sprint 3 is under way: all 28 functional requirements and all 11 user stories are merged into `main`, and the app runs online at https://teamsync-du.fwh.is. What is left of Sprint 3 is the FR-19 email test, manual testing, diagrams and slides.
 
-Requirements: `docs/Teamsync-Requirements-v1.2.pdf` (SRS v1.2, Nov 14, 2026).
+Requirements: SRS v1.3 (Nov 16, 2026). The PDF in `docs/` stays v1.2 until the FR-19 email test passes.
 
 ## Summary
 
@@ -11,9 +11,9 @@ Requirements: `docs/Teamsync-Requirements-v1.2.pdf` (SRS v1.2, Nov 14, 2026).
 | 0 | Nov 3 – Nov 9 | Setup, sign-up, login, roles | Starter commit | Nov 8 |
 | 1 | Nov 10 – Nov 16 | Projects, invite codes, Kanban board, tasks | #1 (#5), #2 (#6), #3 (#7), #4 (#8) | Nov 10 |
 | 2 | Nov 17 – Nov 23 | Contribution report, professor view, reminders, drag-and-drop | #9 (#16), #10 (#17), #11 (#18), #12 (#19) | Nov 11 – Nov 12 |
-| 3 | Nov 24 – Nov 30 | Testing, UML/ER update, final slides | #13, #14, #15 | – |
+| 3 | Nov 24 – Nov 30 | Online site, professor code, email reminders, password reset, login protection, automated tests, task comments; testing, UML/ER update, final slides | #25 (#26), #28 (#30), #31 (#32), #33 (#34), #35 (#36), #38 (#37); #13, #14, #15 open | Nov 13 – 15 (code) |
 
-Sprints 1 and 2 finished well before their planned dates, so Sprint 3 can start early.
+Sprints 1 and 2 finished well before their planned dates, so Sprint 3 started early, on Nov 13.
 
 ---
 
@@ -78,6 +78,35 @@ Not done: FR-19 (email one day before the due date). It is a *Could*, and XAMPP 
 
 ---
 
+## Sprint 3 – so far (Nov 13 – 16)
+
+**Review**
+
+- App put online at https://teamsync-du.fwh.is (InfinityFree: PHP 8.3 and MySQL, free) with three sample teams; README links to it (#24)
+- A drag that gets a web page instead of JSON back now shows a clear message (#23)
+- #25 Signing up as Professor needs a secret professor code – FR-25 (#26). Found because the site was now public: anyone could sign up as Professor and see every team.
+- SRS v1.2 with FR-25 (#27)
+- #28 Email reminder to the assignee the day before a task is due – FR-19 (#30). Sent through Gmail SMTP with an App Password; the dashboard starts the sending in the background, because free hosting has no scheduled jobs.
+- Guide for team members (PDF) and GitHub invitations sent
+- #31 Forgot password: a reset link by email that works once, for one hour; only a hash of the link is stored – FR-26 (#32)
+- #33 Login protection: 5 wrong passwords within 15 minutes block that email for 15 minutes – FR-27 (#34)
+- #35 Automated tests: `tests/run.php` checks 59 rules, each named after its FR or TC; GitHub Actions runs them on every push and pull request (#36)
+- #38 Task comments: each task has its own page where the team discusses it; the card shows the number of comments; professors can only read – FR-28 (#37). Also online since Nov 16.
+- SRS v1.3 (Nov 16): FR-26 to FR-28, US-10, US-11, UC-09, UC-10, NFR-15, NFR-16 and TC-26 to TC-28
+
+**Retrospective (so far)**
+
+| Went well | Went wrong | Change |
+| --- | --- | --- |
+| Going online showed a real security gap, and it was fixed the same night | Free hosting has no PHP `mail()`, no cron, and a database clock in another time zone | Gmail SMTP; reminders run when someone opens the dashboard; dates come from PHP (Korean time), never from the database clock |
+| Every change still went through an issue and a pull request | Editing `config/db.php` in `nano` went wrong on screen | Change config values with one-line commands and check with `php -l` |
+| | The same issue was opened twice (#28, #29) | Look at the issue list before opening a new one |
+| Breaking the code on purpose made the automated tests fail, so the tests really catch mistakes | GitHub refused to push the test workflow: the access token had no `workflow` permission | Added the `workflow` scope to the token |
+| Comments went online in two steps (database first, then files), so the live board never broke | A pull request was opened before its issue, so it took the issue's number (#37) | Open the issue first, then the branch and the pull request |
+| | Reminder and reset emails have not reached a real Gmail inbox yet | A one-off mail check script shows the exact SMTP error; FR-19 stays *In progress* until an email arrives |
+
+---
+
 ## Process retrospective (Sprints 0–2)
 
 - **The code is ahead of the team.** All coding so far was done by Kabir Md Fahim. The other three members have not yet accepted their GitHub invitations, so issues #13 to #15 are still waiting for them.
@@ -89,11 +118,12 @@ Not done: FR-19 (email one day before the due date). It is a *Could*, and XAMPP 
 | # | Action | Owner | Issue |
 | --- | --- | --- | --- |
 | 1 | Accept the GitHub invitation and take over your issue | Miraj Md, Fahim Iftekhar Zaman, Hossain Md Fahim Al | – |
-| 2 | Run test cases TC-01 to TC-24 (SRS §9) on a fresh XAMPP install; open a bug issue for each failure | Fahim Iftekhar Zaman | #14 |
-| 3 | Update the Use Case, Class and ER diagrams to match the final code | Miraj Md | #13 |
+| 2 | Run test cases TC-01 to TC-28 (SRS §9) on a fresh XAMPP install; open a bug issue for each failure | Fahim Iftekhar Zaman | #14 |
+| 3 | Update the Use Case, Class and ER diagrams to match the final code (new: UC-09, UC-10; tables `password_resets`, `login_attempts`, `task_comments`) | Miraj Md | #13 |
 | 4 | Final presentation slides with real screenshots and a demo script | Hossain Md Fahim Al | #15 |
 | 5 | Fix every bug issue from item 2 before Week 14 | Kabir Md Fahim | bug issues |
-| 6 | Show SRS v1.1 and the running app to the professor (Sprint review) | Kabir Md Fahim | – |
-| 7 | Decide at Sprint 3 planning whether FR-19 (email) is dropped or built | Team | – |
+| 6 | Show SRS v1.2, the live site and the email reminder to the professor (Sprint review, Mon Nov 16) | Kabir Md Fahim | – |
+| 7 | Decide whether FR-19 (email) is dropped or built: built (#28) | Team | #28 |
+| 8 | Get a reminder and a reset email into a real Gmail inbox, then mark FR-19 Done and put SRS v1.3 in `docs/` | Kabir Md Fahim | #28 |
 
 Merge checklist kept from the retrospectives: `chmod 644` new files → test as every role → hard refresh → push → pull request → merge → `git pull`.

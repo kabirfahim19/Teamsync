@@ -2,7 +2,7 @@
 
 Sprints 0 to 2 are done and Sprint 3 is under way: all 28 functional requirements and all 11 user stories are merged into `main`, and the app runs online at https://teamsync-du.fwh.is. What is left of Sprint 3 is the FR-19 email test, manual testing, diagrams and slides.
 
-Requirements: SRS v1.3 (Nov 16, 2026). The PDF in `docs/` stays v1.2 until the FR-19 email test passes.
+Requirements: `docs/Teamsync-Requirements-v1.3.pdf` (SRS v1.3, Nov 16, 2026). FR-19 is marked *In progress* there until a reminder reaches a real Gmail inbox.
 
 ## Summary
 
@@ -124,6 +124,6 @@ Not done: FR-19 (email one day before the due date). It is a *Could*, and XAMPP 
 | 5 | Fix every bug issue from item 2 before Week 14 | Kabir Md Fahim | bug issues |
 | 6 | Show SRS v1.2, the live site and the email reminder to the professor (Sprint review, Mon Nov 16) | Kabir Md Fahim | – |
 | 7 | Decide whether FR-19 (email) is dropped or built: built (#28) | Team | #28 |
-| 8 | Get a reminder and a reset email into a real Gmail inbox, then mark FR-19 Done and put SRS v1.3 in `docs/` | Kabir Md Fahim | #28 |
+| 8 | Get a reminder and a reset email into a real Gmail inbox, then mark FR-19 Done in the SRS | Kabir Md Fahim | #28 |
 
 Merge checklist kept from the retrospectives: `chmod 644` new files → test as every role → hard refresh → push → pull request → merge → `git pull`.

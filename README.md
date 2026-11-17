@@ -168,7 +168,7 @@ Teamsync/
 │   ├── add_login_attempts.sql   Adds the login protection table to an older database
 │   └── add_task_comments.sql    Adds the task comments table to an older database
 ├── docs/
-│   ├── Teamsync-Requirements-v1.2.pdf   Software Requirements Specification
+│   ├── Teamsync-Requirements-v1.3.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
 │   └── screenshots/
 ├── tests/
@@ -192,7 +192,7 @@ Teamsync/
 
 ## How we work
 
-We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.2.pdf`](docs/Teamsync-Requirements-v1.2.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
+We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.3.pdf`](docs/Teamsync-Requirements-v1.3.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
 
 Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each issue:
 

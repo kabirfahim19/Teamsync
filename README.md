@@ -102,6 +102,32 @@ The screenshots use sample data.
 6. Open the **Contribution report** from the board.
 7. Sign up as a Professor to see **All teams**, then open any board, task or report (read-only).
 
+## Put it online
+
+The live demo runs on [InfinityFree](https://www.infinityfree.com) (free: PHP 8.3 and MySQL). Any host with PHP 8 and MySQL works the same way.
+
+1. **Account and address.** Sign up, create a hosting account and pick a free subdomain (ours: `teamsync-du.fwh.is`).
+2. **Database.** Control panel → **MySQL Databases** → create one. The control panel shows its host name, database name, user and password.
+3. **Tables and demo data.** Open **phpMyAdmin** next to the database, select the database, then **Import** → `database/online.sql` → **Import**.
+4. **Files.** Zip the app folder without `.git`, `.github`, `tests` and `config/db.php`. In the **Online File Manager**, go *inside* `htdocs` first, then **Upload & Extract** the zip (extracting works only inside `htdocs`).
+5. **Settings.** In `htdocs/config`, copy `db.example.php` to `db.php` and fill in:
+   - `$DB_HOST`, `$DB_NAME`, `$DB_USER`, `$DB_PASS` from step 2
+   - `$PROFESSOR_CODE`: a secret code only the professor gets
+   - `$MAIL_USER` and `$MAIL_PASS`: a Gmail address and its App Password, for reminders and password reset
+   - `$SITE_URL`: the site's address, for the links in emails
+6. Open the address. If the host's welcome page still shows, open `/index.php` once or hard refresh (Cmd + Shift + R).
+
+**What free hosting does differently**
+
+| On free hosting | What Teamsync does |
+|---|---|
+| PHP `mail()` does not work | Sends email through Gmail SMTP (PHPMailer) with an App Password |
+| No scheduled jobs (cron) | Opening the dashboard sends the due reminders in the background |
+| The database clock is in another time zone | Every date comes from PHP in Korean time, never from the database |
+| A security check can answer with a web page instead of JSON | Drag-and-drop shows a clear message instead of failing silently |
+
+**Updating the live site:** first run the new `database/add_*.sql` file in phpMyAdmin (**SQL** tab), then upload the changed files. The other way round, the new code would look for a table that does not exist yet.
+
 ## Testing
 
 **Automated tests** check the app's rules without a browser: invite codes, task checks, who may move a task, overdue and due-soon dates, email reminders, the contribution report, password reset links and the login block. Each test names its requirement or test case from the SRS, for example `TC-07` or `FR-27`.
@@ -163,6 +189,7 @@ Teamsync/
 │   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts, task_comments
 │   ├── sample_tasks.sql  Optional sample tasks
 │   ├── demo_data.sql     Optional demo teams for presentations and testing
+│   ├── online.sql        Every table plus the demo data, for web hosting (no CREATE DATABASE)
 │   ├── add_reminders.sql Adds the reminder column to an older database
 │   ├── add_password_resets.sql  Adds the password reset table to an older database
 │   ├── add_login_attempts.sql   Adds the login protection table to an older database

@@ -834,6 +834,15 @@ test('tests/sqlite_schema.sql has the same tables and columns as database/schema
     check_same($mysql, $sqlite);
 });
 
+test('database/online.sql = schema.sql + demo_data.sql, without CREATE DATABASE or USE', function () {
+    $online = file_get_contents(APP_DIR . '/database/online.sql');
+    check_same(schema_columns(file_get_contents(APP_DIR . '/database/schema.sql')), schema_columns($online), 'tables');
+    check(!preg_match('/^\\s*(CREATE\\s+DATABASE|USE)\\b/mi', $online), 'online.sql must not create or select a database');
+    $demo = file_get_contents(APP_DIR . '/database/demo_data.sql');
+    $demoBody = substr($demo, strpos($demo, '-- 1. Remove old demo data'));
+    check(str_contains($online, $demoBody), 'the demo data differs from database/demo_data.sql');
+});
+
 test('every PHP file of the app has no syntax errors', function () {
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(APP_DIR, FilesystemIterator::SKIP_DOTS));
     $checked = 0;

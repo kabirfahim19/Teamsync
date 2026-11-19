@@ -2,7 +2,7 @@
 
 Sprints 0 to 2 are done and Sprint 3 is under way: all 28 functional requirements and all 11 user stories are merged into `main`, and the app runs online at https://teamsync-du.fwh.is. What is left of Sprint 3 is the FR-19 email test, manual testing, diagrams and slides.
 
-Requirements: `docs/Teamsync-Requirements-v1.3.pdf` (SRS v1.3, Nov 16, 2026). FR-19 is marked *In progress* there until a reminder reaches a real Gmail inbox.
+Requirements: `docs/Teamsync-Requirements-v1.4.pdf` (SRS v1.4, Nov 18, 2026). All 28 functional requirements are done.
 
 ## Summary
 
@@ -103,7 +103,7 @@ Not done: FR-19 (email one day before the due date). It is a *Could*, and XAMPP 
 | | The same issue was opened twice (#28, #29) | Look at the issue list before opening a new one |
 | Breaking the code on purpose made the automated tests fail, so the tests really catch mistakes | GitHub refused to push the test workflow: the access token had no `workflow` permission | Added the `workflow` scope to the token |
 | Comments went online in two steps (database first, then files), so the live board never broke | A pull request was opened before its issue, so it took the issue's number (#37) | Open the issue first, then the branch and the pull request |
-| | Reminder and reset emails have not reached a real Gmail inbox yet | A one-off mail check script shows the exact SMTP error; FR-19 stays *In progress* until an email arrives |
+| | The reset email did not arrive at first | A one-off mail check script showed that sending worked: the account existed only on XAMPP, not online. Both emails reached Gmail on Nov 18 |
 
 ---
 
@@ -124,6 +124,6 @@ Not done: FR-19 (email one day before the due date). It is a *Could*, and XAMPP 
 | 5 | Fix every bug issue from item 2 before Week 14 | Kabir Md Fahim | bug issues |
 | 6 | Show SRS v1.2, the live site and the email reminder to the professor (Sprint review, Mon Nov 16) | Kabir Md Fahim | – |
 | 7 | Decide whether FR-19 (email) is dropped or built: built (#28) | Team | #28 |
-| 8 | Get a reminder and a reset email into a real Gmail inbox, then mark FR-19 Done in the SRS | Kabir Md Fahim | #28 |
+| 8 | Get a reminder and a reset email into a real Gmail inbox, then mark FR-19 Done in the SRS: done Nov 18 (SRS v1.4) | Kabir Md Fahim | #28 |
 
 Merge checklist kept from the retrospectives: `chmod 644` new files → test as every role → hard refresh → push → pull request → merge → `git pull`.

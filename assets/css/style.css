@@ -488,9 +488,9 @@ textarea:focus { outline: 3px solid var(--blue); outline-offset: 2px; }
 .comment-head { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 15px; }
 .tag-inline { margin: 0; }
 .comment-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.comment form { margin: 2px 0 0; }
+.comment form { margin: 0; }
 .link-button {
-    min-height: 32px;
+    min-height: 40px;   /* NFR-09: every button at least 40 px tall */
     padding: 0;
     border: none;
     background: none;

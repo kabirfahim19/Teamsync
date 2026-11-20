@@ -144,7 +144,9 @@ The tests build a new SQLite database in memory, so they never touch your MySQL 
 
 When you add a table or a column to `database/schema.sql`, add it to `tests/sqlite_schema.sql` too. A test checks that the two files match.
 
-**Manual tests:** the pages themselves (forms, HTTP 403 answers, drag-and-drop) are tested by hand with test cases TC-01 to TC-24 in the SRS.
+**Manual tests:** the pages themselves (forms, HTTP 403 answers, drag-and-drop) are tested by hand with test cases TC-01 to TC-28 in the SRS.
+
+**Non-functional checks:** speed, security, permissions, accessibility and browser support (NFR-01 to NFR-16) were checked on Nov 20, 2026. The results are in [`docs/nfr-checks.md`](docs/nfr-checks.md).
 
 ## Folder structure
 
@@ -197,6 +199,7 @@ Teamsync/
 ├── docs/
 │   ├── Teamsync-Requirements-v1.4.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
+│   ├── nfr-checks.md                    Results of the non-functional requirement checks
 │   └── screenshots/
 ├── tests/
 │   ├── run.php           Automated tests: php tests/run.php

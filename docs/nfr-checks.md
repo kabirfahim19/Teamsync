@@ -2,7 +2,7 @@
 
 Checked on Nov 20, 2026 (Sprint 3) against SRS v1.4, issue #44.
 
-**Result: 12 of 16 pass, 3 pass in part, 1 is not checked yet.** One problem was found and fixed: the Delete buttons under comments were 32 px tall instead of at least 40 px (NFR-09). The open items need people or other computers; they are listed at the end with an owner.
+**Result: 13 of 16 pass, 2 pass in part, 1 is not checked yet.** One problem was found and fixed: the Delete buttons under comments were 32 px tall instead of at least 40 px (NFR-09). The open items need people or other computers; they are listed at the end with an owner.
 
 How: the browser checks ran with a Playwright script against a test copy of the app (PHP's built-in server with SQLite, the demo data, and one extra project with 100 tasks), plus a review of the code, the database schema and the GitHub history. Lighthouse ran on the live site.
 
@@ -23,7 +23,7 @@ How: the browser checks ran with a Playwright script against a test copy of the 
 | NFR-13 | Runs on XAMPP on Windows and macOS | XAMPP on macOS (Kabir), and the automated tests on Linux with PHP 8.2 and 8.3 | **Pass in part**: Windows is not checked yet |
 | NFR-14 | Stores only what it needs; passwords never shown | Read `database/schema.sql` and searched the code for `password_hash` | **Pass**: names, emails, roles, project and task data, comments, hashed reset links and login-attempt times. No student ID or phone number. `password_hash` is only written and checked, never shown |
 | NFR-15 | Reset links: 64 random characters, stored only as a SHA-256 hash, one email per 2 minutes | Automated tests under "Password reset (FR-26)" | **Pass** |
-| NFR-16 | The automated tests run on every push and pull request; merge only when they pass | `.github/workflows/tests.yml` and the pull requests on GitHub | **Pass in part**: the tests run on every push and pull request with PHP 8.2 and 8.3. GitHub does not yet stop a merge when they fail |
+| NFR-16 | The automated tests run on every push and pull request; merge only when they pass | `.github/workflows/tests.yml` and the pull requests on GitHub | **Pass** (since Nov 20): the tests run on every push and pull request with PHP 8.2 and 8.3, and a GitHub ruleset on `main` now blocks merging until both pass. It also blocks deleting `main` and force pushes |
 
 ## Still to do
 
@@ -32,4 +32,3 @@ How: the browser checks ran with a Playwright script against a test copy of the 
 | NFR-08 | Ask 3 classmates who have never seen Teamsync to sign up on the live site, join with an invite code and move a task, without help. Time each one; 3 minutes or less passes | Fahim Iftekhar Zaman, with #14 |
 | NFR-10 | Open the live site in Safari on a Mac: log in, drag a card, open a task, write a comment | Kabir Md Fahim |
 | NFR-13 | Set Teamsync up from the README on a Windows laptop with XAMPP | A team member with a Windows laptop |
-| NFR-16 | GitHub → Settings → Branches → add a rule for `main` → tick "Require status checks to pass before merging" and pick the Tests checks | Kabir Md Fahim |

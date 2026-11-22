@@ -2,7 +2,7 @@
 
 Checked on Nov 20, 2026 (Sprint 3) against SRS v1.4, issue #44.
 
-**Result: 13 of 16 pass, 2 pass in part, 1 is not checked yet.** One problem was found and fixed: the Delete buttons under comments were 32 px tall instead of at least 40 px (NFR-09). The open items need people or other computers; they are listed at the end with an owner.
+**Result: 14 of 16 pass, 1 passes in part, 1 is not checked yet.** One problem was found and fixed: the Delete buttons under comments were 32 px tall instead of at least 40 px (NFR-09). The open items need people or other computers; they are listed at the end with an owner.
 
 How: the browser checks ran with a Playwright script against a test copy of the app (PHP's built-in server with SQLite, the demo data, and one extra project with 100 tasks), plus a review of the code, the database schema and the GitHub history. Lighthouse ran on the live site.
 
@@ -17,7 +17,7 @@ How: the browser checks ran with a Playwright script against a test copy of the 
 | NFR-07 | Permissions are checked on the server | 16 requests as a leader of another team, a member, a professor and a logged-out visitor | **Pass**: the 13 that must be refused got HTTP 403; the 2 allowed reads got 200; logged-out visitors go to the login page |
 | NFR-08 | A new user signs up, joins and moves a task in 3 minutes or less | Needs a timed test with 3 classmates | **Not checked yet** |
 | NFR-09 | Buttons at least 40 px tall, every field labelled, text contrast 4.5:1 or more; Lighthouse accessibility 90+ | A script measured every button, field and text on 18 pages for all roles; Lighthouse on the live login page | **Pass after a fix**: every field has a label and all text reaches 4.5:1 (3:1 for large text). The comment Delete buttons were 32 px, now 40 px. Lighthouse accessibility: 100 |
-| NFR-10 | Works in Chrome, Safari and Edge, and at 390 px phone width | Chromium 153 (the engine of Chrome and Edge): log in, board, drag-and-drop, buttons, task page. iPhone 13 size (390 px): 9 pages | **Pass in part**: Chrome/Edge engine and phone width pass, with no page wider than the screen and the board columns stacked. Safari is not checked yet |
+| NFR-10 | Works in Chrome, Safari and Edge, and at 390 px phone width | Chromium 153 (the engine of Chrome and Edge): log in, board, drag-and-drop, buttons, task page. Safari on a Mac, by hand on the live site: log in, drag a card, write a comment. iPhone 13 size (390 px): 9 pages | **Pass**: Chrome/Edge engine, Safari (Nov 23) and phone width pass, with no page wider than the screen and the board columns stacked |
 | NFR-11 | A project and its leader membership are saved together or not at all | Automated test "FR-06 if saving a project fails, no half-made project is left" | **Pass** |
 | NFR-12 | Every change reaches `main` through a pull request | `git log --first-parent main` | **Pass since Nov 11**: 24 of the 27 changes on `main` came through pull requests. The other 3 are from Nov 8–11, before the rule: the initial commit, the starter project and SRS v1.0 |
 | NFR-13 | Runs on XAMPP on Windows and macOS | XAMPP on macOS (Kabir), and the automated tests on Linux with PHP 8.2 and 8.3 | **Pass in part**: Windows is not checked yet |
@@ -30,5 +30,4 @@ How: the browser checks ran with a Playwright script against a test copy of the 
 | NFR | What to do | Who |
 |---|---|---|
 | NFR-08 | Ask 3 classmates who have never seen Teamsync to sign up on the live site, join with an invite code and move a task, without help. Time each one; 3 minutes or less passes | Fahim Iftekhar Zaman, with #14 |
-| NFR-10 | Open the live site in Safari on a Mac: log in, drag a card, open a task, write a comment | Kabir Md Fahim |
 | NFR-13 | Set Teamsync up from the README on a Windows laptop with XAMPP | A team member with a Windows laptop |

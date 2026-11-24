@@ -4,6 +4,9 @@
 
 date_default_timezone_set('Asia/Seoul');   // deadlines use Korean time
 
+require_once __DIR__ . '/security_headers.php';
+send_security_headers();  // what the browser may load, and no framing by other sites
+
 require_once __DIR__ . '/session.php';
 start_secure_session();   // HttpOnly, Secure (on https) and SameSite=Lax session cookie
 

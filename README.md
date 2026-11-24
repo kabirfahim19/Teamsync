@@ -130,7 +130,7 @@ The live demo runs on [InfinityFree](https://www.infinityfree.com) (free: PHP 8.
 
 ## Testing
 
-**Automated tests** check the app's rules without a browser: invite codes, task checks, who may move a task, overdue and due-soon dates, email reminders, the contribution report, password reset links and the login block. Each test names its requirement or test case from the SRS, for example `TC-07` or `FR-27`.
+**Automated tests** check the app's rules without a browser: invite codes, task checks, who may move a task, overdue and due-soon dates, email reminders, the contribution report, password reset links, the login block and the security headers. Each test names its requirement or test case from the SRS, for example `TC-07` or `FR-27`.
 
 Run them from the Teamsync folder:
 
@@ -173,6 +173,7 @@ Teamsync/
 ├── includes/
 │   ├── auth.php          Session, login and role checks, CSRF, escaping
 │   ├── session.php       Session cookie settings (HttpOnly, Secure, SameSite)
+│   ├── security_headers.php  What the browser may load; no framing by other sites
 │   ├── projects.php      Projects, members, invite codes
 │   ├── tasks.php         Tasks, board columns, due-soon list
 │   ├── mail.php          Sending email over SMTP
@@ -244,6 +245,7 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - Every page checks the user's role and project membership; professors cannot change anything
 - All output is escaped with `htmlspecialchars()` (no XSS)
 - The session ID is renewed at login. The session cookie is `HttpOnly` (JavaScript cannot read it), `SameSite=Lax`, and `Secure` on https, and PHP refuses session IDs it did not create
+- Every page sends security headers. The Content-Security-Policy lets scripts run only from our own files, so a script typed into a title or a comment cannot run even if escaping were missed. No other site may show Teamsync inside a frame (clickjacking), and links to other sites never get our page addresses
 - After 5 wrong passwords for one email within 15 minutes, logging in to it is blocked for 15 minutes
 - Signing up as Professor needs a secret code set in `config/db.php`
 - Password reset links are random, stored only as a hash, work once and expire after one hour; the page never tells whether an email has an account

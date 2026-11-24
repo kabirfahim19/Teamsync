@@ -51,6 +51,7 @@ require_once APP_DIR . '/includes/password_resets.php';
 require_once APP_DIR . '/includes/login_guard.php';
 require_once APP_DIR . '/includes/comments.php';
 require_once APP_DIR . '/includes/session.php';
+require_once APP_DIR . '/includes/security_headers.php';
 
 
 // ======================================================================
@@ -827,6 +828,151 @@ test('#48  no page starts a session without these settings', function () {
         }
     }
     check($bad === [], 'session_start() called directly in: ' . implode(', ', $bad));
+});
+
+
+group('Security headers (#50)');
+
+// The Content-Security-Policy as ['script-src' => ["'self'"], ...]
+function csp_directives(): array
+{
+    $directives = [];
+    foreach (explode(';', security_headers()['Content-Security-Policy']) as $part) {
+        $words = preg_split('/\s+/', trim($part));
+        $directives[array_shift($words)] = $words;
+    }
+    return $directives;
+}
+
+// The pages and API files a browser can open: the .php files in the main folder and in api/
+function app_pages(): array
+{
+    $pages = [];
+    foreach (array_merge(glob(APP_DIR . '/*.php'), glob(APP_DIR . '/api/*.php')) as $path) {
+        $pages[str_replace('\\', '/', substr($path, strlen(APP_DIR) + 1))] = $path;
+    }
+    return $pages;
+}
+
+test('#50  no other site may show Teamsync inside a frame (clickjacking)', function () {
+    check_same(["'none'"], csp_directives()['frame-ancestors'] ?? null, 'frame-ancestors');
+    check_same('DENY', security_headers()['X-Frame-Options'], 'X-Frame-Options');
+});
+
+test('#50  scripts run only from our own files: no inline scripts, no eval()', function () {
+    $csp = csp_directives();
+    check_same(["'self'"], $csp['default-src'] ?? null, 'default-src');
+    check_same(["'self'"], $csp['script-src'] ?? null, 'script-src');
+    check_same(["'none'"], $csp['object-src'] ?? null, 'object-src');
+    check_same(["'self'"], $csp['form-action'] ?? null, 'form-action');
+    check_same(["'self'"], $csp['base-uri'] ?? null, 'base-uri');
+    foreach ($csp as $directive => $sources) {
+        check(!in_array("'unsafe-eval'", $sources, true), "$directive allows eval()");
+        if ($directive !== 'style-src-attr') {   // only style="width: N%" attributes are allowed inline
+            check(!in_array("'unsafe-inline'", $sources, true), "$directive allows inline code");
+        }
+    }
+});
+
+test('#50  files keep the type the server gives, and other sites never get our page addresses', function () {
+    $headers = security_headers();
+    check_same('nosniff', $headers['X-Content-Type-Options'], 'X-Content-Type-Options');
+    check_same('same-origin', $headers['Referrer-Policy'], 'Referrer-Policy (a reset link stays private)');
+});
+
+test('#50  every outside file the pages load is allowed by the policy (Google Fonts)', function () {
+    $csp = csp_directives();
+    $found = 0;
+    foreach (app_pages() + ['includes/header.php' => APP_DIR . '/includes/header.php', 'includes/footer.php' => APP_DIR . '/includes/footer.php'] as $relative => $path) {
+        $html = file_get_contents($path);
+        preg_match_all('/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="(https?:\/\/[^\/"]+)/i', $html, $styles);
+        preg_match_all('/<script\b[^>]*\bsrc="(https?:\/\/[^\/"]+)/i', $html, $scripts);
+        foreach ($styles[1] as $origin) {
+            $found++;
+            check(in_array($origin, $csp['style-src'], true), "$relative loads a style sheet from $origin");
+            if ($origin === 'https://fonts.googleapis.com') {
+                check(in_array('https://fonts.gstatic.com', $csp['font-src'], true), 'the Google Fonts files come from https://fonts.gstatic.com');
+            }
+        }
+        foreach ($scripts[1] as $origin) {
+            check(in_array($origin, $csp['script-src'], true), "$relative loads a script from $origin");
+        }
+    }
+    check($found >= 1, 'the Google Fonts link in includes/header.php was not found');
+});
+
+test('#50  no page has inline <script> code or onclick="..." handlers (the policy would block them)', function () {
+    $files = app_pages();
+    foreach (glob(APP_DIR . '/includes/*.php') as $path) {
+        $files['includes/' . basename($path)] = $path;
+    }
+    $bad = [];
+    foreach ($files as $relative => $path) {
+        $code = file_get_contents($path);
+        if (preg_match('/<script\b(?![^>]*\bsrc=)/i', $code)) {
+            $bad[] = "$relative: <script> without src";
+        }
+        if (preg_match('/<[a-z][^<>]*\son[a-z]+\s*=\s*["\']/i', $code)) {
+            $bad[] = "$relative: an on...=\"\" handler";
+        }
+        if (stripos($code, 'javascript:') !== false) {
+            $bad[] = "$relative: a javascript: link";
+        }
+    }
+    check(count($files) >= 25, 'only ' . count($files) . ' files checked');
+    check($bad === [], implode('; ', $bad) . ' (put the code in assets/js/app.js instead)');
+});
+
+test('#50  every page and API file loads includes/auth.php first, so every answer has these headers', function () {
+    $bad = [];
+    foreach (app_pages() as $relative => $path) {
+        $code = file_get_contents($path);
+        preg_match('/\brequire(?:_once)?\b([^;]+);/', $code, $first);
+        if (!str_starts_with($code, '<?php') || !$first || !str_contains($first[1], '/includes/auth.php')) {
+            $bad[] = $relative;
+        }
+    }
+    check(count(app_pages()) >= 15, 'only ' . count(app_pages()) . ' pages found');
+    check($bad === [], 'does not start by loading includes/auth.php: ' . implode(', ', $bad));
+    $auth = file_get_contents(APP_DIR . '/includes/auth.php');
+    $sends = strpos($auth, 'send_security_headers();');
+    check($sends !== false && $sends < strpos($auth, 'start_secure_session();'), 'auth.php must send the headers before it starts the session');
+});
+
+test('#50  a page really sends them (asks PHP\'s own web server for index.php)', function () {
+    $probe = stream_socket_server('tcp://127.0.0.1:0', $errno, $error);
+    check((bool) $probe, "no free port: $error");
+    $port = (int) substr(strrchr(stream_socket_get_name($probe, false), ':'), 1);
+    fclose($probe);
+
+    $null   = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
+    $server = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', APP_DIR],
+                        [['file', $null, 'r'], ['file', $null, 'w'], ['file', $null, 'w']], $pipes);
+    check(is_resource($server), 'could not start php -S');
+    try {
+        $socket   = false;
+        $deadline = microtime(true) + 5;
+        while (!$socket && microtime(true) < $deadline) {
+            $socket = @fsockopen('127.0.0.1', $port, $errno, $error, 1);
+            if (!$socket) {
+                usleep(100000);
+            }
+        }
+        check((bool) $socket, "PHP's web server did not answer on port $port");
+        stream_set_timeout($socket, 5);
+        fwrite($socket, "GET /index.php HTTP/1.0\r\nHost: 127.0.0.1:$port\r\n\r\n");
+        $response = (string) stream_get_contents($socket);
+        fclose($socket);
+    } finally {
+        proc_terminate($server);
+        proc_close($server);
+    }
+
+    $head = substr($response, 0, (int) strpos($response, "\r\n\r\n") + 2);
+    check($head !== '', 'no answer from index.php');
+    foreach (security_headers() as $name => $value) {
+        check(stripos($head, "\r\n$name: $value\r\n") !== false, "index.php did not send $name");
+    }
 });
 
 

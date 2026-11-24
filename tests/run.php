@@ -50,6 +50,7 @@ require_once APP_DIR . '/includes/reminders.php';
 require_once APP_DIR . '/includes/password_resets.php';
 require_once APP_DIR . '/includes/login_guard.php';
 require_once APP_DIR . '/includes/comments.php';
+require_once APP_DIR . '/includes/session.php';
 
 
 // ======================================================================
@@ -784,6 +785,48 @@ db_test('FR-28  the task page gets the task with its assignee', function (PDO $p
                [$task['title'], $task['status'], $task['priority'], $task['due_date'], $task['assignee_name']]);
     check_same(null, get_task_details($pdo, $free)['assignee_name'], 'unassigned');
     check_same(null, get_task_details($pdo, 999), 'missing task');
+});
+
+
+group('Login session cookie (#48)');
+
+test('#48  the session cookie is HttpOnly and SameSite=Lax', function () {
+    $options = session_cookie_options(false);
+    check_same(true, $options['httponly'], 'HttpOnly');
+    check_same('Lax', $options['samesite'], 'SameSite');
+    check_same(0, $options['lifetime'], 'ends when the browser closes');
+});
+
+test('#48  the cookie is Secure on https only (XAMPP uses http)', function () {
+    check_same(true, session_cookie_options(true)['secure'], 'https');
+    check_same(false, session_cookie_options(false)['secure'], 'http');
+});
+
+test('#48  https is recognised directly and behind the host\'s proxy', function () {
+    unset($_SERVER['HTTPS'], $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    check_same(false, request_is_https(), 'plain http');
+    $_SERVER['HTTPS'] = 'on';
+    check_same(true, request_is_https(), 'HTTPS=on');
+    $_SERVER['HTTPS'] = 'off';
+    check_same(false, request_is_https(), 'HTTPS=off (IIS)');
+    unset($_SERVER['HTTPS']);
+    $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+    check_same(true, request_is_https(), 'X-Forwarded-Proto: https');
+});
+
+test('#48  no page starts a session without these settings', function () {
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(APP_DIR, FilesystemIterator::SKIP_DOTS));
+    $bad = [];
+    foreach ($files as $file) {
+        $relative = str_replace('\\', '/', substr($file->getPathname(), strlen(APP_DIR) + 1));
+        if ($file->getExtension() !== 'php' || preg_match('#^(lib|tests|\.git)/#', $relative) || $relative === 'includes/session.php') {
+            continue;
+        }
+        if (preg_match('/\bsession_start\s*\(/', file_get_contents($file->getPathname()))) {
+            $bad[] = $relative;
+        }
+    }
+    check($bad === [], 'session_start() called directly in: ' . implode(', ', $bad));
 });
 
 

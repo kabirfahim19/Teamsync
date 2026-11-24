@@ -172,6 +172,7 @@ Teamsync/
 │   └── db.example.php    Database settings (copy to db.php)
 ├── includes/
 │   ├── auth.php          Session, login and role checks, CSRF, escaping
+│   ├── session.php       Session cookie settings (HttpOnly, Secure, SameSite)
 │   ├── projects.php      Projects, members, invite codes
 │   ├── tasks.php         Tasks, board columns, due-soon list
 │   ├── mail.php          Sending email over SMTP
@@ -242,7 +243,7 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - Every form and every task move carries a CSRF token
 - Every page checks the user's role and project membership; professors cannot change anything
 - All output is escaped with `htmlspecialchars()` (no XSS)
-- The session ID is renewed at login
+- The session ID is renewed at login. The session cookie is `HttpOnly` (JavaScript cannot read it), `SameSite=Lax`, and `Secure` on https, and PHP refuses session IDs it did not create
 - After 5 wrong passwords for one email within 15 minutes, logging in to it is blocked for 15 minutes
 - Signing up as Professor needs a secret code set in `config/db.php`
 - Password reset links are random, stored only as a hash, work once and expire after one hour; the page never tells whether an email has an account

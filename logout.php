@@ -8,7 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 check_csrf();
 
-$_SESSION = [];
-session_destroy();
+end_session();   // also removes the session cookie from the browser
 header('Location: index.php');
 exit;

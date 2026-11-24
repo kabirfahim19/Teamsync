@@ -4,9 +4,8 @@
 
 date_default_timezone_set('Asia/Seoul');   // deadlines use Korean time
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/session.php';
+start_secure_session();   // HttpOnly, Secure (on https) and SameSite=Lax session cookie
 
 $configFile = __DIR__ . '/../config/db.php';
 if (!file_exists($configFile)) {

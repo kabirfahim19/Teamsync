@@ -9,7 +9,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
 
-**Status:** All 28 functional requirements and all 9 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for testing, diagrams and the final presentation.
+**Status:** All 28 functional requirements and all 11 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for team testing, diagrams, slides and the user guide.
 
 ![Kanban board](docs/screenshots/board.png)
 
@@ -253,10 +253,14 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 
 ## Schedule
 
-| Sprint | Dates | Work | Status |
-|---|---|---|---|
-| 0 | Nov 3 – 9 | Setup, sign-up, login, roles | Done |
-| 1 | Nov 10 – 16 | Projects, invite codes, board, tasks | Done (Nov 10) |
-| 2 | Nov 17 – 23 | Report, professor view, reminders, drag-and-drop | Done early (Nov 12) |
-| 3 | Nov 24 – 30 | Testing, bug fixes, UML/ER update, slides | Next |
-| Week 14 | Dec 1 – 7 | Final presentation and demo | – |
+Sprints 1 and 2 took far less time than planned, so Sprint 3 started early, on Nov 13. The planned dates are from the first plan; the actual dates are when the work was merged into `main`.
+
+| Sprint | Planned | Actual | Work | Status |
+|---|---|---|---|---|
+| 0 | Nov 3 – 9 | Nov 8 | Setup, sign-up, login, roles | Done |
+| 1 | Nov 10 – 16 | Nov 10 | Projects, invite codes, board, tasks | Done |
+| 2 | Nov 17 – 23 | Nov 11 – 12 | Contribution report, professor view, due-soon list, drag-and-drop | Done |
+| 3 | Nov 24 – 30 | Nov 13 – 30 | Nov 13 – 16: online site, professor code, email reminders, password reset, login protection, automated tests, task comments<br>Nov 17 – 25: SRS v1.4, non-functional checks, session cookie and security headers<br>Nov 24 – 30: team testing, UML and ER diagrams, slides, user guide | In progress |
+| Week 14 | Dec 1 – 7 | | Final presentation and demo | – |
+
+Sprint reviews and retrospectives: [`docs/sprint-reviews.md`](docs/sprint-reviews.md).

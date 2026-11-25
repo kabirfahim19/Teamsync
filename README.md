@@ -109,7 +109,7 @@ The live demo runs on [InfinityFree](https://www.infinityfree.com) (free: PHP 8.
 1. **Account and address.** Sign up, create a hosting account and pick a free subdomain (ours: `teamsync-du.fwh.is`).
 2. **Database.** Control panel → **MySQL Databases** → create one. The control panel shows its host name, database name, user and password.
 3. **Tables and demo data.** Open **phpMyAdmin** next to the database, select the database, then **Import** → `database/online.sql` → **Import**.
-4. **Files.** Zip the app folder without `.git`, `.github`, `tests` and `config/db.php`. In the **Online File Manager**, go *inside* `htdocs` first, then **Upload & Extract** the zip (extracting works only inside `htdocs`).
+4. **Files.** In the Teamsync folder, run `sh tools/online-zip.sh`. It makes `teamsync-online.zip` in your Downloads folder with every file the site needs, and without `config/db.php`. Open the **File Manager** from the control panel, go *inside* `htdocs` first, then **Upload** → **Zip & Extract** the zip (extracting works only inside `htdocs`).
 5. **Settings.** In `htdocs/config`, copy `db.example.php` to `db.php` and fill in:
    - `$DB_HOST`, `$DB_NAME`, `$DB_USER`, `$DB_PASS` from step 2
    - `$PROFESSOR_CODE`: a secret code only the professor gets
@@ -123,10 +123,18 @@ The live demo runs on [InfinityFree](https://www.infinityfree.com) (free: PHP 8.
 |---|---|
 | PHP `mail()` does not work | Sends email through Gmail SMTP (PHPMailer) with an App Password |
 | No scheduled jobs (cron) | Opening the dashboard sends the due reminders in the background |
-| The database clock is in another time zone | Every date comes from PHP in Korean time, never from the database |
+| The database clock is in another time zone | Every date comes from PHP in Korean time, never from the database. The demo data uses the Korean date too, so `online.sql` can be imported at any time of day |
 | A security check can answer with a web page instead of JSON | Drag-and-drop shows a clear message instead of failing silently |
 
-**Updating the live site:** first run the new `database/add_*.sql` file in phpMyAdmin (**SQL** tab), then upload the changed files. The other way round, the new code would look for a table that does not exist yet.
+**Updating the live site** after a pull request is merged:
+
+1. **Database first**, only if the change touched the database. A new table: import `database/online.sql` again; it adds the missing tables and keeps the others (only the demo data is replaced). A new column: run its `database/add_*.sql` file in phpMyAdmin (**SQL** tab). Done the other way round, the new code would look for a table that does not exist yet.
+2. **Files.** `git checkout main && git pull`, then `sh tools/online-zip.sh`. In the File Manager, open `htdocs` → **Upload** → **Zip & Extract** → `teamsync-online.zip`, and allow it to overwrite.
+3. **Check.** Open `https://teamsync-du.fwh.is/version.txt`. It names the commit that is online; it should be the latest commit on GitHub.
+
+Always upload the whole zip, never single files. One missing file (for example a new file in `includes/`) makes every page fail with HTTP 500.
+
+**Fresh demo data** before a presentation: import `database/online.sql` again in phpMyAdmin, at any time of day. Real accounts and projects stay as they are.
 
 ## Testing
 
@@ -165,6 +173,7 @@ Teamsync/
 ├── task_form.php         Add, edit or delete a task (leader only)
 ├── report.php            Contribution report
 ├── professor.php         All teams (professor only)
+├── favicon.ico           The Teamsync logo in the browser tab
 ├── api/
 │   ├── update_task.php   Moves a task; used by the buttons and by drag-and-drop
 │   └── send_reminders.php  Sends due email reminders; the dashboard calls it in the background
@@ -206,6 +215,8 @@ Teamsync/
 ├── tests/
 │   ├── run.php           Automated tests: php tests/run.php
 │   └── sqlite_schema.sql The tables, for the tests' in-memory database
+├── tools/
+│   └── online-zip.sh     Makes the zip for the live site: sh tools/online-zip.sh
 └── .github/workflows/
     └── tests.yml         Runs the tests on GitHub at every push
 ```

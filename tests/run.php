@@ -1032,6 +1032,68 @@ test('database/online.sql = schema.sql + demo_data.sql, without CREATE DATABASE 
     check(str_contains($online, $demoBody), 'the demo data differs from database/demo_data.sql');
 });
 
+test('the demo data uses the Korean date, so it can be imported at any time of day', function () {
+    foreach (['database/demo_data.sql', 'database/online.sql'] as $file) {
+        $sql = preg_replace('/^\s*--.*$/m', '', file_get_contents(APP_DIR . '/' . $file));   // without comments
+        check(!preg_match('/\b(CURDATE|NOW|SYSDATE)\s*\(|\bCURRENT_DATE\b/i', $sql), "$file uses the database clock");
+        $set = strpos($sql, 'SET @today = DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR);');
+        check($set !== false, "$file does not set @today to the Korean date");
+        check($set < strpos($sql, '@today -'), "$file uses @today before it is set");
+    }
+});
+
+// "includes/auth.php" for a file inside the app folder, written with / on every system
+function app_relative_path(string $path): string
+{
+    $clean = function (string $p): string {
+        $parts = [];
+        foreach (explode('/', str_replace('\\', '/', $p)) as $part) {
+            if ($part === '..') {
+                array_pop($parts);
+            } elseif ($part !== '.' && $part !== '') {
+                $parts[] = $part;
+            }
+        }
+        return implode('/', $parts);
+    };
+    return substr($clean($path), strlen($clean(APP_DIR)) + 1);
+}
+
+test('tools/online-zip.sh packs every file the pages load (a missing file breaks the live site)', function () {
+    $script = file_get_contents(APP_DIR . '/tools/online-zip.sh');
+    check((bool) preg_match('/^APP_FILES="(.+)"$/m', $script, $m), 'APP_FILES not found in tools/online-zip.sh');
+    $packed = preg_split('/\s+/', trim(preg_replace('/\$\([^)]*\)/', 'ROOT_PHP', $m[1])));
+    check(str_contains($m[1], "git ls-files '*.php' | grep -v /"), 'the zip must take every .php file of the main folder');
+
+    $files = app_pages();
+    foreach (glob(APP_DIR . '/includes/*.php') as $path) {
+        $files['includes/' . basename($path)] = $path;
+    }
+    $needed = [];
+    foreach ($files as $relative => $path) {
+        $code = file_get_contents($path);
+        preg_match_all("/\\brequire(?:_once)?\\s+__DIR__\\s*\\.\\s*'([^']+)'/", $code, $requires);
+        foreach ($requires[1] as $target) {
+            $needed[app_relative_path(dirname($path) . $target)] = $relative;
+        }
+        preg_match_all('/\b(?:href|src)="([\w.\/-]+)["#?]/', $code, $links);   // files of this site the browser loads or opens
+        foreach ($links[1] as $target) {
+            $needed[$target] = $relative;
+        }
+    }
+    check(isset($needed['assets/css/style.css'], $needed['includes/auth.php']), 'could not read what the pages load');
+
+    $missing = [];
+    foreach ($needed as $target => $usedBy) {
+        $top = explode('/', $target)[0];
+        $inZip = ($top === $target && str_ends_with($top, '.php')) ? in_array('ROOT_PHP', $packed, true) : in_array($top, $packed, true);
+        if ($top !== 'config' && !$inZip) {   // config/db.php stays on the server
+            $missing[] = "$target (used by $usedBy)";
+        }
+    }
+    check($missing === [], 'not in the zip: ' . implode(', ', $missing) . '. Add it to APP_FILES in tools/online-zip.sh');
+});
+
 test('every PHP file of the app has no syntax errors', function () {
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(APP_DIR, FilesystemIterator::SKIP_DOTS));
     $checked = 0;

@@ -84,6 +84,10 @@ CREATE TABLE IF NOT EXISTS task_comments (
 DELETE FROM projects WHERE leader_id IN (SELECT user_id FROM users WHERE email LIKE '%@demo.test');
 DELETE FROM users WHERE email LIKE '%@demo.test';
 
+-- Today's date in Korea. A free host's database clock can be in another time zone, where CURDATE()
+-- is still yesterday. With @today the demo dates are right whenever and wherever you import this file.
+SET @today = DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR);
+
 -- 2. Users (password for all: demo1234)
 SET @pw = '$2y$10$5eSIfS2aHagrcM.f1sE.ueiBSxoxnj5yq3T5IWnKRfPfdVF7lJU.W';
 
@@ -118,53 +122,53 @@ INSERT INTO projects (title, invite_code, leader_id) VALUES ('Campus Cafe Order 
 SET @p1 = LAST_INSERT_ID();
 INSERT INTO project_members (project_id, user_id) VALUES (@p1, @alex), (@p1, @minji), (@p1, @daniel), (@p1, @sara);
 INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) VALUES
-  (@p1, @alex,   'Write requirements',          'done',        'high',   CURDATE() - INTERVAL 6 DAY),
-  (@p1, @minji,  'Design the ER diagram',       'done',        'medium', CURDATE() - INTERVAL 4 DAY),
-  (@p1, @daniel, 'Build the login page',        'done',        'high',   CURDATE() - INTERVAL 3 DAY),
-  (@p1, @sara,   'Menu page layout',            'done',        'medium', CURDATE() - INTERVAL 1 DAY),
-  (@p1, @daniel, 'Order cart and checkout',     'in_progress', 'high',   CURDATE() + INTERVAL 1 DAY),
-  (@p1, @minji,  'Draw the UML class diagram',  'in_progress', 'medium', CURDATE() + INTERVAL 3 DAY),
-  (@p1, @alex,   'Admin menu editor',           'in_progress', 'medium', CURDATE() + INTERVAL 2 DAY),
-  (@p1, @alex,   'Review team pull requests',   'todo',        'high',   CURDATE()),
-  (@p1, @sara,   'Write test cases',            'todo',        'high',   CURDATE() - INTERVAL 1 DAY),
+  (@p1, @alex,   'Write requirements',          'done',        'high',   @today - INTERVAL 6 DAY),
+  (@p1, @minji,  'Design the ER diagram',       'done',        'medium', @today - INTERVAL 4 DAY),
+  (@p1, @daniel, 'Build the login page',        'done',        'high',   @today - INTERVAL 3 DAY),
+  (@p1, @sara,   'Menu page layout',            'done',        'medium', @today - INTERVAL 1 DAY),
+  (@p1, @daniel, 'Order cart and checkout',     'in_progress', 'high',   @today + INTERVAL 1 DAY),
+  (@p1, @minji,  'Draw the UML class diagram',  'in_progress', 'medium', @today + INTERVAL 3 DAY),
+  (@p1, @alex,   'Admin menu editor',           'in_progress', 'medium', @today + INTERVAL 2 DAY),
+  (@p1, @alex,   'Review team pull requests',   'todo',        'high',   @today),
+  (@p1, @sara,   'Write test cases',            'todo',        'high',   @today - INTERVAL 1 DAY),
   (@p1, @minji,  'Order history page',          'todo',        'medium', NULL),
-  (@p1, @sara,   'Payment confirmation email',  'todo',        'low',    CURDATE() + INTERVAL 6 DAY),
-  (@p1, @alex,   'Prepare final slides',        'todo',        'low',    CURDATE() + INTERVAL 14 DAY);
+  (@p1, @sara,   'Payment confirmation email',  'todo',        'low',    @today + INTERVAL 6 DAY),
+  (@p1, @alex,   'Prepare final slides',        'todo',        'low',    @today + INTERVAL 14 DAY);
 
 -- 4. Team 2: Library Seat Finder (8 tasks, 6 done)
 INSERT INTO projects (title, invite_code, leader_id) VALUES ('Library Seat Finder', 'TS-R4WX', @yuna);
 SET @p2 = LAST_INSERT_ID();
 INSERT INTO project_members (project_id, user_id) VALUES (@p2, @yuna), (@p2, @jisoo), (@p2, @tom);
 INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) VALUES
-  (@p2, @yuna,  'Requirements and use cases', 'done',        'high',   CURDATE() - INTERVAL 9 DAY),
-  (@p2, @jisoo, 'Seat map page',              'done',        'high',   CURDATE() - INTERVAL 6 DAY),
-  (@p2, @tom,   'Database design',            'done',        'medium', CURDATE() - INTERVAL 7 DAY),
-  (@p2, @jisoo, 'Booking form',               'done',        'high',   CURDATE() - INTERVAL 3 DAY),
-  (@p2, @tom,   'Login and roles',            'done',        'medium', CURDATE() - INTERVAL 4 DAY),
-  (@p2, @yuna,  'Admin page',                 'done',        'medium', CURDATE() - INTERVAL 2 DAY),
-  (@p2, @tom,   'Test the booking rules',     'in_progress', 'high',   CURDATE() + INTERVAL 2 DAY),
-  (@p2, @yuna,  'Final presentation',         'todo',        'low',    CURDATE() + INTERVAL 18 DAY);
+  (@p2, @yuna,  'Requirements and use cases', 'done',        'high',   @today - INTERVAL 9 DAY),
+  (@p2, @jisoo, 'Seat map page',              'done',        'high',   @today - INTERVAL 6 DAY),
+  (@p2, @tom,   'Database design',            'done',        'medium', @today - INTERVAL 7 DAY),
+  (@p2, @jisoo, 'Booking form',               'done',        'high',   @today - INTERVAL 3 DAY),
+  (@p2, @tom,   'Login and roles',            'done',        'medium', @today - INTERVAL 4 DAY),
+  (@p2, @yuna,  'Admin page',                 'done',        'medium', @today - INTERVAL 2 DAY),
+  (@p2, @tom,   'Test the booking rules',     'in_progress', 'high',   @today + INTERVAL 2 DAY),
+  (@p2, @yuna,  'Final presentation',         'todo',        'low',    @today + INTERVAL 18 DAY);
 
 -- 5. Team 3: Bus Arrival Bot (6 tasks, 1 done, 2 overdue)
 INSERT INTO projects (title, invite_code, leader_id) VALUES ('Bus Arrival Bot', 'TS-9HPD', @hyunwoo);
 SET @p3 = LAST_INSERT_ID();
 INSERT INTO project_members (project_id, user_id) VALUES (@p3, @hyunwoo), (@p3, @ana), (@p3, @mark), (@p3, @eunbi);
 INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) VALUES
-  (@p3, @hyunwoo, 'Project proposal',      'done',        'high',   CURDATE() - INTERVAL 10 DAY),
-  (@p3, @ana,     'Collect bus stop data', 'in_progress', 'high',   CURDATE() - INTERVAL 2 DAY),
-  (@p3, @mark,    'Chat bot replies',      'todo',        'high',   CURDATE() - INTERVAL 1 DAY),
-  (@p3, @eunbi,   'Arrival time screen',   'todo',        'medium', CURDATE() + INTERVAL 3 DAY),
-  (@p3, @ana,     'Favourite stops',       'todo',        'low',    CURDATE() + INTERVAL 7 DAY),
-  (@p3, @hyunwoo, 'Test plan',             'todo',        'medium', CURDATE() + INTERVAL 5 DAY);
+  (@p3, @hyunwoo, 'Project proposal',      'done',        'high',   @today - INTERVAL 10 DAY),
+  (@p3, @ana,     'Collect bus stop data', 'in_progress', 'high',   @today - INTERVAL 2 DAY),
+  (@p3, @mark,    'Chat bot replies',      'todo',        'high',   @today - INTERVAL 1 DAY),
+  (@p3, @eunbi,   'Arrival time screen',   'todo',        'medium', @today + INTERVAL 3 DAY),
+  (@p3, @ana,     'Favourite stops',       'todo',        'low',    @today + INTERVAL 7 DAY),
+  (@p3, @hyunwoo, 'Test plan',             'todo',        'medium', @today + INTERVAL 5 DAY);
 
 -- 6. Comments on Team 1 tasks (FR-28)
 SET @cart  = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Order cart and checkout');
 SET @tests = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Write test cases');
 SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw the UML class diagram');
 INSERT INTO task_comments (task_id, user_id, body, created_at) VALUES
-  (@cart,  @daniel, 'The cart works. I still need the total price with the student discount.', TIMESTAMP(CURDATE() - INTERVAL 1 DAY, '15:20:00')),
-  (@cart,  @alex,   'The discount is 10% with a student card. Can you finish it by tomorrow?',  TIMESTAMP(CURDATE() - INTERVAL 1 DAY, '16:05:00')),
-  (@cart,  @daniel, 'Yes, I will push it tonight.',                                              TIMESTAMP(CURDATE(), '09:40:00')),
-  (@tests, @sara,   'I am waiting for the checkout page, so I will test login and the menu first.', TIMESTAMP(CURDATE() - INTERVAL 2 DAY, '11:00:00')),
-  (@tests, @minji,  'I can help with the menu page tests.',                                      TIMESTAMP(CURDATE() - INTERVAL 2 DAY, '13:30:00')),
-  (@uml,   @minji,  'The first version is in our shared folder. Comments welcome!',              TIMESTAMP(CURDATE() - INTERVAL 3 DAY, '20:15:00'));
+  (@cart,  @daniel, 'The cart works. I still need the total price with the student discount.', TIMESTAMP(@today - INTERVAL 1 DAY, '15:20:00')),
+  (@cart,  @alex,   'The discount is 10% with a student card. Can you finish it by tomorrow?',  TIMESTAMP(@today - INTERVAL 1 DAY, '16:05:00')),
+  (@cart,  @daniel, 'Yes, I will push it tonight.',                                              TIMESTAMP(@today, '09:40:00')),
+  (@tests, @sara,   'I am waiting for the checkout page, so I will test login and the menu first.', TIMESTAMP(@today - INTERVAL 2 DAY, '11:00:00')),
+  (@tests, @minji,  'I can help with the menu page tests.',                                      TIMESTAMP(@today - INTERVAL 2 DAY, '13:30:00')),
+  (@uml,   @minji,  'The first version is in our shared folder. Comments welcome!',              TIMESTAMP(@today - INTERVAL 3 DAY, '20:15:00'));

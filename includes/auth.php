@@ -16,6 +16,13 @@ if (!file_exists($configFile)) {
 }
 require_once $configFile;   // gives us $pdo
 
+// The account behind this session must still exist, with the same role. If it was deleted (importing the
+// demo data again does that) or its role changed, this browser is logged out and sees the login page.
+if (isset($_SESSION['user_id'])
+    && !session_account_is_current($pdo, (int) $_SESSION['user_id'], (string) ($_SESSION['role'] ?? ''))) {
+    forget_login();
+}
+
 // ---------- Login and roles ----------
 
 function is_logged_in(): bool

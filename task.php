@@ -3,6 +3,7 @@
 // Members of the project read and write comments; the author or the team leader can delete one.
 // Professors can open every task and read its comments, read-only.
 // Under the comments: the task's history, who added it and who moved it where (FR-29).
+// The person the task is assigned to can hand it in to Review here, with a link to the work (FR-31).
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/projects.php';
 require_once __DIR__ . '/includes/tasks.php';
@@ -30,6 +31,9 @@ if (!$isMember && !$isProfessor) {
 $leaderId   = (int) $project['leader_id'];
 $isLeader   = $userId === $leaderId;
 $canComment = $isMember && !$isProfessor;
+// A member hands their own task in here (FR-31). The leader approves tasks and needs no hand-in form.
+$canHandIn  = $canComment && !$isLeader && $task['status'] !== 'review'
+              && can_move_task_to($task, $userId, $leaderId, 'review');
 $pageUrl    = 'task.php?id=' . $taskId;
 $errors     = [];
 $draft      = '';
@@ -118,6 +122,29 @@ require __DIR__ . '/includes/header.php';
         <?php endif; ?>
     </div>
 
+    <?php if ($canHandIn): ?>
+        <section class="card handin" id="hand-in" aria-labelledby="handin-title">
+            <h2 id="handin-title">Hand in for review</h2>
+            <p class="muted small">Finished? Give your team leader a link to the work. The leader checks it, then approves the task to Done.</p>
+            <form class="stack-form" method="post" action="api/update_task.php">
+                <?= csrf_field() ?>
+                <input type="hidden" name="task_id" value="<?= $taskId ?>">
+                <input type="hidden" name="status" value="review">
+                <input type="hidden" name="return" value="task">
+                <label for="handin-link">Link to your work</label>
+                <input type="url" id="handin-link" name="link" required maxlength="<?= HANDIN_LINK_MAX ?>"
+                       placeholder="https://github.com/you/app/pull/12">
+                <span class="muted small">A pull request, a Google Drive file or anything your leader can open.</span>
+                <label for="handin-note">What did you finish? <span class="muted">(optional)</span></label>
+                <textarea id="handin-note" name="note" rows="3" maxlength="<?= HANDIN_NOTE_MAX ?>"></textarea>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-inline">Move to Review</button>
+                    <span class="muted small">The link and your note are posted as a comment.</span>
+                </div>
+            </form>
+        </section>
+    <?php endif; ?>
+
     <section class="card comments" id="comments" aria-labelledby="comments-title">
         <h2 id="comments-title">Comments <span class="count"><?= count($comments) ?></span></h2>
 
@@ -138,7 +165,7 @@ require __DIR__ . '/includes/header.php';
                                 <?php if ((int) $c['user_id'] === $leaderId): ?><span class="tag tag-inline">Leader</span><?php endif; ?>
                                 <time class="muted small" datetime="<?= e(date('c', strtotime($c['created_at']))) ?>"><?= e(comment_time($c['created_at'])) ?></time>
                             </p>
-                            <p class="comment-text"><?= e($c['body']) ?></p>
+                            <p class="comment-text"><?= comment_html($c['body']) ?></p>
                             <?php if ($canComment && can_delete_comment($c, $userId, $leaderId)): ?>
                                 <form method="post" action="<?= e($pageUrl) ?>" data-confirm="Delete this comment?">
                                     <?= csrf_field() ?>

@@ -95,3 +95,17 @@ CREATE TABLE IF NOT EXISTS task_events (
   FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- Hand-ins (FR-31): the link to the work given when a task was moved to Review (a pull request,
+-- a Google Drive file, ...). The leader's "Waiting for your approval" list shows the newest one.
+-- If the account is deleted later, the link stays with user_id NULL.
+CREATE TABLE IF NOT EXISTS task_handins (
+  handin_id  INT AUTO_INCREMENT PRIMARY KEY,
+  task_id    INT          NOT NULL,
+  user_id    INT          NULL,
+  link       VARCHAR(500) NOT NULL,
+  created_at DATETIME     NOT NULL,
+  INDEX (task_id, created_at),
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB;

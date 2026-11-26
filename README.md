@@ -42,6 +42,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Task comments: each task has its own page where the team discusses it; professors can read along | Team members, Professor | #37 |
 | Task history: the task page shows who added the task and who moved it to which column, and when | Team members, Professor | #58 |
 | Leader approval: a member moves a finished task to Review; only the leader approves it to Done, and the leader's dashboard lists what is waiting | Team Leader, Team members | #59 |
+| Hand-in with a link: moving a task to Review asks for a link to the work (pull request, Drive file); it is posted as a comment and shown in the leader's approval list. Links in comments are clickable | Team members, Team Leader | #62 |
 
 
 ## Screenshots
@@ -191,18 +192,19 @@ Teamsync/
 │   ├── reminders.php     Email reminders (FR-19)
 │   ├── password_resets.php  Password reset links (FR-26)
 │   ├── login_guard.php   Blocks password guessing (FR-27)
-│   ├── comments.php      Task comments (FR-28)
+│   ├── comments.php      Task comments (FR-28), clickable links
 │   ├── history.php       Task history: who moved a task, and when (FR-29)
+│   ├── handins.php       Handing a task in to Review with a link to the work (FR-31)
 │   ├── reports.php       Contribution numbers
 │   ├── header.php
 │   └── footer.php
 ├── assets/
 │   ├── css/style.css
-│   └── js/app.js         Delete confirmation, drag-and-drop, sign-up form, reminder call
+│   └── js/app.js         Delete confirmation, drag-and-drop, hand-in box, sign-up form, reminder call
 ├── lib/
 │   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
-│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts, task_comments, task_events
+│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts, task_comments, task_events, task_handins
 │   ├── sample_tasks.sql  Optional sample tasks
 │   ├── demo_data.sql     Optional demo teams for presentations and testing
 │   ├── online.sql        Every table plus the demo data, for web hosting (no CREATE DATABASE)
@@ -211,7 +213,8 @@ Teamsync/
 │   ├── add_login_attempts.sql   Adds the login protection table to an older database
 │   ├── add_task_comments.sql    Adds the task comments table to an older database
 │   ├── add_task_history.sql     Adds the task history table to an older database
-│   └── add_review_status.sql    Adds the Review status to an older database
+│   ├── add_review_status.sql    Adds the Review status to an older database
+│   └── add_handins.sql          Adds the hand-in table to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.4.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -238,6 +241,7 @@ Teamsync/
 | `login_attempts` | Wrong-password tries of the last day, for the login block |
 | `task_comments` | Comments on tasks: who wrote what, and when |
 | `task_events` | Task history: who added each task and who moved it, from which column to which, and when |
+| `task_handins` | The link to the work given when a task was moved to Review, who gave it and when |
 
 ## How we work
 

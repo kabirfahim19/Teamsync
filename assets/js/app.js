@@ -48,6 +48,7 @@ function initProfessorCodeField() {
 // dropped in (the server decides: a member cannot drop a card in Done, FR-30).
 // A drop sends the same request as the buttons, to api/update_task.php, and asks for JSON.
 // The answer brings the card's new buttons and targets. Without JavaScript the buttons still work.
+// A card going to Review first asks for a link to the work (FR-31): dropped there, or its Review button.
 
 function initBoardDragAndDrop() {
     const board = document.querySelector('.board[data-csrf]');
@@ -55,7 +56,17 @@ function initBoardDragAndDrop() {
         return;
     }
     const csrf = board.dataset.csrf;
+    const openHandIn = initHandInDialog(board, csrf);
     let dragged = null;
+
+    // The Review button is a link to the task page's hand-in form; with JavaScript the box opens instead.
+    board.addEventListener('click', (event) => {
+        const link = event.target.closest('a[data-handin]');
+        if (link && openHandIn) {
+            event.preventDefault();
+            openHandIn(link.closest('.task-card'));
+        }
+    });
 
     board.addEventListener('dragstart', (event) => {
         const card = event.target.closest('.task-card[draggable="true"]');
@@ -97,21 +108,83 @@ function initBoardDragAndDrop() {
             event.preventDefault();
             column.classList.remove('drop-target');
             const card = dragged;
-            if (card && card.dataset.status !== column.dataset.status) {
-                moveCard(csrf, card, column);
+            if (!card || card.dataset.status === column.dataset.status) {
+                return;
+            }
+            if (column.dataset.status !== 'review') {
+                moveCard(csrf, card, column).then(showBoardError);
+            } else if (openHandIn) {
+                openHandIn(card);   // the move happens when the link is given
+            } else {
+                window.location.href = `task.php?id=${card.dataset.taskId}#hand-in`;
             }
         });
     });
 }
 
-async function moveCard(csrf, card, column) {
+// FR-31: the box that asks for the link to the work when a card goes to Review.
+// Returns a function that opens it for a card, or null when this page has no box (or the browser no <dialog>).
+function initHandInDialog(board, csrf) {
+    const dialog = document.getElementById('handin-dialog');
+    const column = board.querySelector('.column[data-status="review"]');
+    if (!dialog || !column || typeof dialog.showModal !== 'function') {
+        return null;
+    }
+    const form = dialog.querySelector('form');
+    const submit = form.querySelector('button[type="submit"]');
+    const error = dialog.querySelector('[data-handin-error]');
+    let card = null;
+
+    const showError = (message) => {
+        error.textContent = message;
+        error.hidden = !message;
+    };
+
+    // The browser has already checked that the link is a web address; the server checks it again.
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!card) {
+            return;
+        }
+        submit.disabled = true;
+        const message = await moveCard(csrf, card, column, {
+            link: form.elements.link.value,
+            note: form.elements.note.value,
+        });
+        submit.disabled = false;
+        if (message) {
+            showError(message);   // the box stays open, with what was typed
+            return;
+        }
+        dialog.close();
+    });
+    dialog.querySelector('[data-handin-cancel]').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => {
+        card = null;
+    });
+
+    return (target) => {
+        card = target;
+        form.reset();
+        showError('');
+        showBoardError('');
+        dialog.querySelector('[data-handin-title]').textContent = `“${target.dataset.title}”`;
+        dialog.showModal();
+        form.elements.link.focus();
+    };
+}
+
+// Sends a move to the server; when it is saved, the card moves on the board.
+// extra = more fields to send (a hand-in's link and note).
+// Returns the error message to show, or '' when the move worked.
+async function moveCard(csrf, card, column, extra = {}) {
     const status = column.dataset.status;
     const from = card.closest('.column');
     const body = new FormData();
     body.append('csrf_token', csrf);
     body.append('task_id', card.dataset.taskId);
     body.append('status', status);
-    showBoardError('');
+    Object.entries(extra).forEach(([name, value]) => body.append(name, value));
 
     let response;
     let result;
@@ -136,13 +209,11 @@ async function moveCard(csrf, card, column) {
             };
         }
     } catch {
-        showBoardError('Could not reach the server. Check that XAMPP is running and try again.');
-        return;
+        return 'Could not reach the server. Check that XAMPP is running and try again.';
     }
 
     if (!response.ok || !result.success) {
-        showBoardError(result.message || 'Could not move the task.');
-        return; // the card stays where it was
+        return result.message || 'Could not move the task.'; // the card stays where it was
     }
 
     column.appendChild(card);
@@ -152,6 +223,7 @@ async function moveCard(csrf, card, column) {
     refreshColumn(column);
     refreshProgress(result);
     announce(`${card.dataset.title} moved to ${result.labels[status]}.`);
+    return '';
 }
 
 // Badge, due date, buttons and drop targets of a card after it changed column.
@@ -186,12 +258,31 @@ function refreshCard(csrf, card, result) {
         due.textContent = (late ? 'Overdue · ' : 'Due ') + card.dataset.dueLabel;
     }
 
+    // A hand-in adds a comment: the count on the card follows.
+    const count = card.querySelector('.comment-count');
+    if (count && typeof result.comments === 'number') {
+        count.lastChild.textContent = result.comments;
+        count.setAttribute('aria-label',
+            `${result.comments} ${result.comments === 1 ? 'comment' : 'comments'} on “${card.dataset.title}”`);
+    }
+
     const actions = card.querySelector('.task-actions');
     if (!actions) {
         return;
     }
-    actions.querySelectorAll('form').forEach((form) => form.remove());
+    actions.querySelectorAll('form, a[data-handin]').forEach((old) => old.remove());
     result.moves.forEach(([to, label]) => {
+        if (to === 'review') {
+            // Handing in needs a link: the button opens the hand-in box (see initBoardDragAndDrop)
+            const link = document.createElement('a');
+            link.className = 'btn-move';
+            link.href = `task.php?id=${card.dataset.taskId}#hand-in`;
+            link.dataset.handin = '';
+            link.textContent = label;
+            link.setAttribute('aria-label', `Hand in “${card.dataset.title}” for review`);
+            actions.append(link);
+            return;
+        }
         const form = document.createElement('form');
         form.method = 'post';
         form.action = 'api/update_task.php';

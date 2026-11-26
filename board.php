@@ -89,7 +89,7 @@ require __DIR__ . '/includes/header.php';
             <?php if ($isLeader): ?>
                 Tasks in Review wait for you: Approve moves them to Done.
             <?php else: ?>
-                Finished a task? Move it to Review; your team leader approves it to Done.
+                Finished a task? Move it to Review with a link to your work; your team leader approves it to Done.
             <?php endif; ?>
         </p>
     <?php endif; ?>
@@ -155,12 +155,18 @@ require __DIR__ . '/includes/header.php';
                                     <a class="btn-move" href="task_form.php?task=<?= (int) $task['task_id'] ?>" aria-label="Edit “<?= e($task['title']) ?>”">Edit</a>
                                 <?php endif; ?>
                                 <?php foreach ($moves as [$to, $buttonLabel]): ?>
-                                    <form method="post" action="api/update_task.php">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="task_id" value="<?= (int) $task['task_id'] ?>">
-                                        <input type="hidden" name="status" value="<?= e($to) ?>">
-                                        <button type="submit" class="btn-move" aria-label="Move “<?= e($task['title']) ?>” to <?= e(TASK_STATUSES[$to]) ?>"><?= e($buttonLabel) ?></button>
-                                    </form>
+                                    <?php if ($to === 'review'): ?>
+                                        <?php // Handing in needs a link (FR-31): the hand-in box opens (JavaScript) or the task page's form ?>
+                                        <a class="btn-move" href="task.php?id=<?= (int) $task['task_id'] ?>#hand-in" data-handin
+                                           aria-label="Hand in “<?= e($task['title']) ?>” for review"><?= e($buttonLabel) ?></a>
+                                    <?php else: ?>
+                                        <form method="post" action="api/update_task.php">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="task_id" value="<?= (int) $task['task_id'] ?>">
+                                            <input type="hidden" name="status" value="<?= e($to) ?>">
+                                            <button type="submit" class="btn-move" aria-label="Move “<?= e($task['title']) ?>” to <?= e(TASK_STATUSES[$to]) ?>"><?= e($buttonLabel) ?></button>
+                                        </form>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
@@ -169,5 +175,27 @@ require __DIR__ . '/includes/header.php';
             </section>
         <?php endforeach; ?>
     </div>
+
+    <?php if (!$isProfessor): ?>
+        <?php // FR-31: the box that asks for the link when a card goes to Review. JavaScript opens it. ?>
+        <dialog id="handin-dialog" class="handin-dialog" aria-labelledby="handin-dialog-title">
+            <form class="stack-form" id="handin-form">
+                <h2 id="handin-dialog-title">Hand in <span data-handin-title></span></h2>
+                <p class="muted small">Give your team leader a link to the work. The leader checks it, then approves the task to Done.</p>
+                <p class="alert alert-error" role="alert" data-handin-error hidden></p>
+                <label for="handin-link">Link to your work</label>
+                <input type="url" id="handin-link" name="link" required maxlength="<?= HANDIN_LINK_MAX ?>"
+                       placeholder="https://github.com/you/app/pull/12">
+                <span class="muted small">A pull request, a Google Drive file or anything your leader can open.</span>
+                <label for="handin-note">What did you finish? <span class="muted">(optional)</span></label>
+                <textarea id="handin-note" name="note" rows="3" maxlength="<?= HANDIN_NOTE_MAX ?>"></textarea>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-inline">Move to Review</button>
+                    <button type="button" class="btn btn-secondary btn-inline" data-handin-cancel>Cancel</button>
+                </div>
+                <span class="muted small">The link and your note are posted as a comment on the task.</span>
+            </form>
+        </dialog>
+    <?php endif; ?>
 </main>
 <?php require __DIR__ . '/includes/footer.php'; ?>

@@ -1,7 +1,8 @@
 <?php
-// Move a task to another column (To Do / In Progress / Done).
-// Called by the buttons on board.php. Later the drag-and-drop JavaScript can call it too:
-// send the header "Accept: application/json" to get a JSON answer instead of a redirect.
+// Move a task to another column (To Do / In Progress / Review / Done).
+// Called by the buttons on board.php, the hand-in form on task.php and the drag-and-drop JavaScript.
+// Send the header "Accept: application/json" to get a JSON answer instead of a redirect.
+// A move into Review needs a link to the work (FR-31): POST link, and note (optional).
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/projects.php';
 require_once __DIR__ . '/../includes/tasks.php';
@@ -61,8 +62,18 @@ if ($task['status'] !== $status && !can_move_task_to($task, $userId, (int) $task
     reply(403, 'Only the team leader can move a task into Done or out of it. Move your finished task to Review.', $wantsJson);
 }
 
+// Handing a task in to Review needs a link to the work, so the leader can check it (FR-31).
+$handIn = null;
+if ($status === 'review' && $task['status'] !== 'review') {
+    [$link, $note, $handInErrors] = validate_handin((string) ($_POST['link'] ?? ''), (string) ($_POST['note'] ?? ''));
+    if ($handInErrors) {
+        reply(400, $handInErrors[0], $wantsJson);
+    }
+    $handIn = ['link' => $link, 'note' => $note];
+}
+
 if ($task['status'] !== $status) {
-    move_task($pdo, $taskId, $task['status'], $status, $userId);   // also writes the task's history
+    move_task($pdo, $taskId, $task['status'], $status, $userId, $handIn);   // also writes the history (and the hand-in)
 }
 
 if ($wantsJson) {
@@ -72,6 +83,9 @@ if ($wantsJson) {
     $total    = (int) $count['total'];
     $done     = (int) $count['done'];
     $progress = $total ? (int) round($done / $total * 100) : 0;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM task_comments WHERE task_id = ?');
+    $stmt->execute([$taskId]);
+    $comments = (int) $stmt->fetchColumn();   // a hand-in adds a comment
     // The card's new buttons and the columns it may be dragged to, for this user (the browser draws them).
     $isLeader = $userId === (int) $task['leader_id'];
     reply(200, 'Task moved.', true, [
@@ -82,8 +96,14 @@ if ($wantsJson) {
         'done'     => $done,
         'total'    => $total,
         'progress' => $progress,
+        'comments' => $comments,
     ]);
 }
 
+// The hand-in form on the task page goes back to that page, where the new comment is.
+if (($_POST['return'] ?? '') === 'task') {
+    header('Location: ../task.php?id=' . $taskId . '#comments');
+    exit;
+}
 header('Location: ../board.php?project=' . (int) $task['project_id']);
 exit;

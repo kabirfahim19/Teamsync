@@ -94,6 +94,20 @@ CREATE TABLE IF NOT EXISTS task_events (
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- Hand-ins (FR-31): the link to the work given when a task was moved to Review (a pull request,
+-- a Google Drive file, ...). The leader's "Waiting for your approval" list shows the newest one.
+-- If the account is deleted later, the link stays with user_id NULL.
+CREATE TABLE IF NOT EXISTS task_handins (
+  handin_id  INT AUTO_INCREMENT PRIMARY KEY,
+  task_id    INT          NOT NULL,
+  user_id    INT          NULL,
+  link       VARCHAR(500) NOT NULL,
+  created_at DATETIME     NOT NULL,
+  INDEX (task_id, created_at),
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- 1. Remove old demo data (tasks and memberships go with their project)
 DELETE FROM projects WHERE leader_id IN (SELECT user_id FROM users WHERE email LIKE '%@demo.test');
 DELETE FROM users WHERE email LIKE '%@demo.test';
@@ -213,7 +227,12 @@ SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw
 INSERT INTO task_comments (task_id, user_id, body, created_at) VALUES
   (@cart,  @daniel, 'The cart works. I still need the total price with the student discount.', TIMESTAMP(@today - INTERVAL 1 DAY, '15:20:00')),
   (@cart,  @alex,   'The discount is 10% with a student card. Can you finish it by tomorrow?',  TIMESTAMP(@today - INTERVAL 1 DAY, '16:05:00')),
-  (@cart,  @daniel, 'Pushed it last night. The card is in Review now.',                         TIMESTAMP(@today, '09:40:00')),
+  (@cart,  @daniel, 'Pushed it last night: the total now has the student discount.\nWork: https://example.com/campus-cafe/pull/12', TIMESTAMP(@today, '09:35:00')),
   (@tests, @sara,   'I am waiting for the checkout page, so I will test login and the menu first.', TIMESTAMP(@today - INTERVAL 2 DAY, '11:00:00')),
   (@tests, @minji,  'I can help with the menu page tests.',                                      TIMESTAMP(@today - INTERVAL 2 DAY, '13:30:00')),
   (@uml,   @minji,  'The first version is in our shared folder. Comments welcome!',              TIMESTAMP(@today - INTERVAL 3 DAY, '20:15:00'));
+
+-- 8. Hand-ins (FR-31): Daniel gave this link when he moved his task to Review (the comment above says the same).
+--    example.com is a safe address for demo links: it belongs to nobody.
+INSERT INTO task_handins (task_id, user_id, link, created_at) VALUES
+  (@cart, @daniel, 'https://example.com/campus-cafe/pull/12', TIMESTAMP(@today, '09:35:00'));

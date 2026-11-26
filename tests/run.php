@@ -919,6 +919,112 @@ test('FR-29  every move goes through move_task(), so no move is missing from the
 });
 
 
+group('Hand-in with a link to the work (FR-31)');
+
+test('FR-31  a hand-in needs a web link; the note is optional', function () {
+    $error = fn(string $link, string $note = '') => validate_handin($link, $note)[2];
+    check_same(['Add a link to your work, for example a pull request or a Google Drive file.'], $error('  '), 'no link');
+    $notWeb = ['The link must be a web address that starts with https:// or http://.'];
+    check_same($notWeb, $error('github.com/team/app/pull/3'), 'no https://');
+    check_same($notWeb, $error('ftp://files.example.com/report.pdf'), 'ftp');
+    check_same($notWeb, $error('java' . 'script:alert(1)'), 'a script address');
+    check_same($notWeb, $error('https://exa mple.com'), 'a space inside');
+    check_same(['The link can be at most 500 characters.'], $error('https://example.com/' . str_repeat('a', 481)), '501 characters');
+    check_same([], $error('https://example.com/' . str_repeat('a', 480)), '500 characters');
+    check_same(['The note can be at most 400 characters.'], $error('https://example.com', str_repeat('가', 401)), 'long note');
+    check_same(['https://github.com/team/app/pull/3', "Cart done\nand tested", []],
+               validate_handin(' https://github.com/team/app/pull/3 ', " Cart done\r\nand tested "), 'trimmed');
+    check_same([], $error('http://drive.google.com/file/d/abc/view?usp=sharing'), 'http and a query');
+});
+
+test('FR-31  the hand-in comment has the note (or "Ready for review.") and the link', function () {
+    check_same("Cart done.\nWork: https://example.com/pull/3", handin_comment('https://example.com/pull/3', 'Cart done.'));
+    check_same("Ready for review.\nWork: https://example.com/pull/3", handin_comment('https://example.com/pull/3', ''));
+    $longest = handin_comment('https://example.com/' . str_repeat('a', 480), str_repeat('a', 400));
+    check_same([], validate_comment($longest)[1], 'the longest hand-in still fits in one comment');
+});
+
+db_test('FR-31  moving a task to Review with a link saves the move, the history, the comment and the link together', function (PDO $pdo) {
+    $t  = make_team($pdo);
+    $id = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout', 'in_progress');
+    move_task($pdo, $id, 'in_progress', 'review', $t['minji'], ['link' => 'https://example.com/pull/7', 'note' => 'Menu page done.']);
+    check_same('review', value($pdo, 'SELECT status FROM tasks WHERE task_id = ?', [$id]), 'status');
+    check_same(['Minji Lee moved it from In Progress to Review'], array_map('task_event_text', get_task_events($pdo, $id)), 'history');
+    $comments = get_comments($pdo, $id);
+    check_same(["Menu page done.\nWork: https://example.com/pull/7"], array_column($comments, 'body'), 'comment');
+    check_same('Minji Lee', $comments[0]['author_name'], 'comment author');
+    check_same('https://example.com/pull/7', get_waiting_for_review($pdo, $t['leader'])[0]['handin_link'], 'link for the leader');
+});
+
+db_test('FR-31  if the link cannot be saved, the task does not move either', function (PDO $pdo) {
+    $t  = make_team($pdo);
+    $id = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout', 'in_progress');
+    $pdo->exec('DROP TABLE task_handins');   // saving the link fails
+    try {
+        move_task($pdo, $id, 'in_progress', 'review', $t['minji'], ['link' => 'https://example.com/pull/7', 'note' => '']);
+        check(false, 'move_task() should have failed');
+    } catch (PDOException $ex) {
+        // expected
+    }
+    check_same('in_progress', value($pdo, 'SELECT status FROM tasks WHERE task_id = ?', [$id]), 'status');
+    check_same(0, (int) value($pdo, 'SELECT COUNT(*) FROM task_events'), 'history lines');
+    check_same(0, (int) value($pdo, 'SELECT COUNT(*) FROM task_comments'), 'comments');
+});
+
+db_test('FR-31  the leader\'s list shows the newest link; a task handed in without one shows none', function (PDO $pdo) {
+    $t     = make_team($pdo);
+    $menu  = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout', 'in_progress');
+    $login = add_task($pdo, $t['pid'], $t['alex'], 'Login page', 'review');   // in Review from before FR-31
+    move_task($pdo, $menu, 'in_progress', 'review', $t['minji'], ['link' => 'https://example.com/first', 'note' => '']);
+    move_task($pdo, $menu, 'review', 'in_progress', $t['leader']);   // sent back
+    move_task($pdo, $menu, 'in_progress', 'review', $t['minji'], ['link' => 'https://example.com/second', 'note' => 'Fixed it.']);
+    $links = array_column(get_waiting_for_review($pdo, $t['leader']), 'handin_link', 'title');
+    check_same(['Menu page layout' => 'https://example.com/second', 'Login page' => null], $links);
+    check_same(2, (int) value($pdo, 'SELECT COUNT(*) FROM task_comments WHERE task_id = ?', [$menu]), 'one comment per hand-in');
+    check_same(0, (int) value($pdo, 'SELECT COUNT(*) FROM task_comments WHERE task_id = ?', [$login]), 'no comment without a hand-in');
+});
+
+db_test('FR-31  deleting a task deletes its links; a deleted account\'s link stays', function (PDO $pdo) {
+    $t    = make_team($pdo);
+    $menu = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout', 'in_progress');
+    $cart = add_task($pdo, $t['pid'], $t['alex'], 'Order cart', 'in_progress');
+    add_handin($pdo, $menu, $t['minji'], 'https://example.com/menu');
+    add_handin($pdo, $cart, $t['alex'], 'https://example.com/cart');
+    delete_task($pdo, $menu);
+    check_same(0, (int) value($pdo, 'SELECT COUNT(*) FROM task_handins WHERE task_id = ?', [$menu]), 'links of the deleted task');
+    $pdo->prepare('DELETE FROM users WHERE user_id = ?')->execute([$t['alex']]);
+    check_same([null], array_map(fn($v) => $v === null ? null : (int) $v,
+               $pdo->query('SELECT user_id FROM task_handins')->fetchAll(PDO::FETCH_COLUMN)), 'link of a deleted account');
+});
+
+test('FR-31  the move API asks for the link before a task goes to Review', function () {
+    $api = file_get_contents(APP_DIR . '/api/update_task.php');
+    check(str_contains($api, "\$status === 'review'") && str_contains($api, 'validate_handin('), 'api/update_task.php must check the link');
+    check(strpos($api, 'validate_handin(') < strpos($api, 'move_task($pdo'), 'the check must come before the move');
+    check(strpos($api, 'can_move_task_to(') < strpos($api, 'validate_handin('), 'who may move it is checked first');
+});
+
+test('FR-31  links in comments are clickable, open in a new tab, and everything else stays escaped', function () {
+    check_same('See <a href="https://example.com/pull/3" target="_blank" rel="noopener noreferrer nofollow">https://example.com/pull/3</a>.',
+               comment_html('See https://example.com/pull/3.'), 'full stop after the link');
+    check_same('&lt;b&gt;Hi&lt;/b&gt; &amp; bye', comment_html('<b>Hi</b> & bye'), 'HTML is escaped');
+    check_same('(<a href="https://example.com/a?x=1&amp;y=2" target="_blank" rel="noopener noreferrer nofollow">https://example.com/a?x=1&amp;y=2</a>)',
+               comment_html('(https://example.com/a?x=1&y=2)'), 'brackets and & in a link');
+    check_same('<a href="https://example.com/a" target="_blank" rel="noopener noreferrer nofollow">https://example.com/a</a>에서 봐',
+               comment_html('https://example.com/a에서 봐'), 'Korean right after a link');
+    check(!str_contains(comment_html('java' . 'script:alert(1) and ftp://example.com'), '<a '), 'only http and https become links');
+    check(!str_contains(comment_html('https://"onmouseover="alert(1)'), 'onmouseover="'), 'a quote cannot leave the link');
+    check_same("Line 1\n<a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">https://example.com</a>",
+               comment_html("Line 1\nhttps://example.com"), 'line breaks stay');
+    check(str_contains(file_get_contents(APP_DIR . '/task.php'), "comment_html(\$c['body'])"), 'task.php must show comments with comment_html()');
+});
+
+test('FR-31  the list shows where a link goes before it is opened', function () {
+    check_same('github.com', link_host('https://www.github.com/team/app/pull/3'));
+    check_same('drive.google.com', link_host('https://drive.google.com/file/d/abc/view'));
+});
+
+
 group('Login session cookie (#48)');
 
 test('#48  the session cookie is HttpOnly and SameSite=Lax', function () {

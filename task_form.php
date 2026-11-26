@@ -54,7 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             update_task($pdo, $taskId, $data);
             header('Location: ' . $boardUrl . '&msg=updated');
         } else {
-            create_task($pdo, $projectId, $data);
+            $newId = create_task($pdo, $projectId, $data);
+            add_task_event($pdo, $newId, $userId, null, 'todo');   // history: who added it
             header('Location: ' . $boardUrl . '&msg=added');
         }
         exit;

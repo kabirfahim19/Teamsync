@@ -60,3 +60,13 @@ CREATE TABLE task_comments (
   created_at TEXT NOT NULL
 );
 CREATE INDEX task_comments_task ON task_comments (task_id, created_at);
+
+CREATE TABLE task_events (
+  event_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id     INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+  user_id     INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+  from_status TEXT,
+  to_status   TEXT NOT NULL,
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX task_events_task ON task_events (task_id, created_at);

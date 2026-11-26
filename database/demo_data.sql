@@ -1,6 +1,7 @@
 -- Demo data for presentations and testing.
--- Adds 3 sample teams (12 users, 26 tasks, 6 comments). Every demo account uses the password: demo1234
--- The database needs the task_comments table (schema.sql, or database/add_task_comments.sql for an older database).
+-- Adds 3 sample teams (12 users, 26 tasks, 6 comments, and each task's history). Every demo account uses the password: demo1234
+-- The database needs the task_comments and task_events tables (schema.sql, or database/add_task_comments.sql
+-- and database/add_task_history.sql for an older database).
 -- Running it again first removes the old demo data, so it always starts clean.
 -- Your own accounts and projects are not touched.
 --
@@ -95,7 +96,25 @@ INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) V
   (@p3, @ana,     'Favourite stops',       'todo',        'low',    @today + INTERVAL 7 DAY),
   (@p3, @hyunwoo, 'Test plan',             'todo',        'medium', @today + INTERVAL 5 DAY);
 
--- 6. Comments on Team 1 tasks (FR-28)
+-- 6. History (FR-29): each leader added the tasks two weeks ago; each member started and finished their own
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, p.leader_id, NULL, 'todo', TIMESTAMP(@today - INTERVAL 14 DAY, '10:00:00')
+FROM tasks t JOIN projects p ON p.project_id = t.project_id
+WHERE t.project_id IN (@p1, @p2, @p3);
+
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, t.assignee_id, 'todo', 'in_progress',
+       CASE WHEN t.status = 'done' THEN TIMESTAMP(t.due_date - INTERVAL 3 DAY, '14:00:00')
+            ELSE TIMESTAMP(@today - INTERVAL 2 DAY, '14:00:00') END
+FROM tasks t
+WHERE t.project_id IN (@p1, @p2, @p3) AND t.status IN ('in_progress', 'done');
+
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, t.assignee_id, 'in_progress', 'done', TIMESTAMP(t.due_date - INTERVAL 1 DAY, '18:00:00')
+FROM tasks t
+WHERE t.project_id IN (@p1, @p2, @p3) AND t.status = 'done';
+
+-- 7. Comments on Team 1 tasks (FR-28)
 SET @cart  = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Order cart and checkout');
 SET @tests = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Write test cases');
 SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw the UML class diagram');

@@ -1,7 +1,7 @@
 -- Demo data for presentations and testing.
--- Adds 3 sample teams (12 users, 26 tasks, 6 comments, and each task's history). Every demo account uses the password: demo1234
--- The database needs the task_comments and task_events tables (schema.sql, or database/add_task_comments.sql
--- and database/add_task_history.sql for an older database).
+-- Adds 3 sample teams (12 users, 26 tasks, 6 comments, each task's history and one hand-in link). Every demo account uses the password: demo1234
+-- The database needs the task_comments, task_events and task_handins tables (schema.sql, or
+-- database/add_task_comments.sql, database/add_task_history.sql and database/add_handins.sql for an older database).
 -- Running it again first removes the old demo data, so it always starts clean.
 -- Your own accounts and projects are not touched.
 --
@@ -134,7 +134,12 @@ SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw
 INSERT INTO task_comments (task_id, user_id, body, created_at) VALUES
   (@cart,  @daniel, 'The cart works. I still need the total price with the student discount.', TIMESTAMP(@today - INTERVAL 1 DAY, '15:20:00')),
   (@cart,  @alex,   'The discount is 10% with a student card. Can you finish it by tomorrow?',  TIMESTAMP(@today - INTERVAL 1 DAY, '16:05:00')),
-  (@cart,  @daniel, 'Pushed it last night. The card is in Review now.',                         TIMESTAMP(@today, '09:40:00')),
+  (@cart,  @daniel, 'Pushed it last night: the total now has the student discount.\nWork: https://example.com/campus-cafe/pull/12', TIMESTAMP(@today, '09:35:00')),
   (@tests, @sara,   'I am waiting for the checkout page, so I will test login and the menu first.', TIMESTAMP(@today - INTERVAL 2 DAY, '11:00:00')),
   (@tests, @minji,  'I can help with the menu page tests.',                                      TIMESTAMP(@today - INTERVAL 2 DAY, '13:30:00')),
   (@uml,   @minji,  'The first version is in our shared folder. Comments welcome!',              TIMESTAMP(@today - INTERVAL 3 DAY, '20:15:00'));
+
+-- 8. Hand-ins (FR-31): Daniel gave this link when he moved his task to Review (the comment above says the same).
+--    example.com is a safe address for demo links: it belongs to nobody.
+INSERT INTO task_handins (task_id, user_id, link, created_at) VALUES
+  (@cart, @daniel, 'https://example.com/campus-cafe/pull/12', TIMESTAMP(@today, '09:35:00'));

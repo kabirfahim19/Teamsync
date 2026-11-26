@@ -82,12 +82,20 @@ require __DIR__ . '/includes/header.php';
                 <h2 id="approve-title">Waiting for your approval</h2>
                 <span class="count"><?= count($toApprove) ?> <?= count($toApprove) === 1 ? 'task' : 'tasks' ?></span>
             </div>
-            <p class="muted small">Your members moved these to Review. Check the work, then Approve it on the board, or send it back.</p>
+            <p class="muted small">Your members moved these to Review. Open the link to check the work, then Approve it on the board, or send it back.</p>
             <ul class="due-list">
                 <?php foreach ($toApprove as $t): ?>
                     <li>
                         <span class="due-when"><?= e($t['assignee_name'] ?? 'Unassigned') ?></span>
-                        <a class="due-title" href="task.php?id=<?= (int) $t['task_id'] ?>"><?= e($t['title']) ?></a>
+                        <span class="approval-task">
+                            <a class="due-title" href="task.php?id=<?= (int) $t['task_id'] ?>"><?= e($t['title']) ?></a>
+                            <?php if ($t['handin_link']): ?>
+                                <?php // the link the member gave when handing the task in (FR-31); it opens in a new tab ?>
+                                <a class="handin-link" href="<?= e($t['handin_link']) ?>" target="_blank" rel="noopener noreferrer nofollow">Open the work on <?= e(link_host($t['handin_link'])) ?> ↗</a>
+                            <?php else: ?>
+                                <span class="muted small">No link to the work</span>
+                            <?php endif; ?>
+                        </span>
                         <a class="due-project" href="board.php?project=<?= (int) $t['project_id'] ?>"><?= e($t['project_title']) ?> board</a>
                     </li>
                 <?php endforeach; ?>

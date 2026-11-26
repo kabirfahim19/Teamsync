@@ -62,6 +62,41 @@ function delete_comment(PDO $pdo, int $commentId): void
     $stmt->execute([$commentId]);
 }
 
+// An address a browser can open: http:// or https://, with a host and no spaces.
+// Every other kind of address is refused (a script or data address too), so a link can never run code.
+function is_web_link(string $url): bool
+{
+    if (preg_match('/\s/', $url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+        return false;
+    }
+    $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+    return in_array($scheme, ['http', 'https'], true) && (string) parse_url($url, PHP_URL_HOST) !== '';
+}
+
+// A comment as HTML: escaped like all text, with its web links clickable (they open in a new tab).
+// A full stop or bracket right after a link ends the sentence, so it stays outside the link.
+function comment_html(string $body): string
+{
+    $html  = '';
+    $parts = preg_split("~(https?://[A-Za-z0-9\\-._\\~:/?#\\[\\]@!$&()*+,;=%]+)~i", $body, -1, PREG_SPLIT_DELIM_CAPTURE);
+    foreach ($parts as $i => $part) {
+        if ($i % 2 === 0) {
+            $html .= e($part);   // plain text between the links
+            continue;
+        }
+        $end = '';
+        if (preg_match('/[.,;:!?)\]]+$/', $part, $m)) {
+            $end  = $m[0];
+            $part = substr($part, 0, -strlen($end));
+        }
+        $html .= is_web_link($part)
+            ? '<a href="' . e($part) . '" target="_blank" rel="noopener noreferrer nofollow">' . e($part) . '</a>'
+            : e($part);
+        $html .= e($end);
+    }
+    return $html;
+}
+
 // "Today, 4:05 PM", "Yesterday, 9:30 AM" or "Nov 12, 2:15 PM"
 function comment_time(string $createdAt): string
 {

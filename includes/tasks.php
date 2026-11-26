@@ -2,6 +2,7 @@
 // Functions for tasks on the Kanban board. Used by board.php and api/update_task.php.
 
 require_once __DIR__ . '/history.php';
+require_once __DIR__ . '/handins.php';
 
 const TASK_STATUSES = [
     'todo'        => 'To Do',
@@ -68,14 +69,19 @@ function can_move_task_to(array $task, int $userId, int $leaderId, string $to): 
 }
 
 // Moves a task to another column and writes the move into the task's history (FR-29).
-// Both are saved together or not at all.
-function move_task(PDO $pdo, int $taskId, string $from, string $to, int $userId): void
+// A hand-in to Review (FR-31) brings ['link' => ..., 'note' => ...]: it is posted as a comment and the link is saved.
+// Everything is saved together or not at all.
+function move_task(PDO $pdo, int $taskId, string $from, string $to, int $userId, ?array $handIn = null): void
 {
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare('UPDATE tasks SET status = ? WHERE task_id = ?');
         $stmt->execute([$to, $taskId]);
         add_task_event($pdo, $taskId, $userId, $from, $to);
+        if ($handIn !== null) {
+            add_comment($pdo, $taskId, $userId, handin_comment($handIn['link'], $handIn['note']));
+            add_handin($pdo, $taskId, $userId, $handIn['link']);
+        }
         $pdo->commit();
     } catch (Throwable $ex) {
         $pdo->rollBack();
@@ -252,11 +258,14 @@ function task_moves(string $status, bool $isLeader): array
     return $moves[$status] ?? [];
 }
 
-// Tasks in Review in the projects this user leads: the leader's list of tasks to approve (FR-30).
+// Tasks in Review in the projects this user leads: the leader's list of tasks to approve (FR-30),
+// each with the link to the work from its newest hand-in (FR-31), or null.
 function get_waiting_for_review(PDO $pdo, int $leaderId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT t.task_id, t.title, u.name AS assignee_name, p.project_id, p.title AS project_title
+        "SELECT t.task_id, t.title, u.name AS assignee_name, p.project_id, p.title AS project_title,
+                (SELECT h.link FROM task_handins h WHERE h.task_id = t.task_id
+                 ORDER BY h.created_at DESC, h.handin_id DESC LIMIT 1) AS handin_link
          FROM tasks t
          JOIN projects p ON p.project_id = t.project_id
          LEFT JOIN users u ON u.user_id = t.assignee_id

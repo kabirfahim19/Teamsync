@@ -70,3 +70,12 @@ CREATE TABLE task_events (
   created_at  TEXT NOT NULL
 );
 CREATE INDEX task_events_task ON task_events (task_id, created_at);
+
+CREATE TABLE task_handins (
+  handin_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id    INTEGER NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+  user_id    INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+  link       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX task_handins_task ON task_handins (task_id, created_at);

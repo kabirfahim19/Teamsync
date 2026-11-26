@@ -73,8 +73,8 @@ if (!$task['due_date']) {
     $dueText = 'No due date';
 } elseif (is_overdue($task)) {
     $dueText = 'Overdue · ' . date('M j', strtotime($task['due_date']));
-} elseif ($task['status'] === 'done') {
-    $dueText = date('M j', strtotime($task['due_date']));
+} elseif (in_array($task['status'], TASK_HANDED_IN, true)) {
+    $dueText = date('M j', strtotime($task['due_date']));   // handed in: no longer late
 } else {
     $dueText = due_label($task['due_date']);
 }

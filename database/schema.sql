@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   project_id  INT          NOT NULL,
   assignee_id INT          NULL,
   title       VARCHAR(100) NOT NULL,
-  status      ENUM('todo', 'in_progress', 'done') NOT NULL DEFAULT 'todo',
+  status      ENUM('todo', 'in_progress', 'review', 'done') NOT NULL DEFAULT 'todo',   -- review: waiting for the leader (FR-30)
   priority    ENUM('low', 'medium', 'high')       NOT NULL DEFAULT 'medium',
   due_date    DATE         NULL,
   reminder_sent_at DATETIME NULL,              -- when the email reminder went out (FR-19)

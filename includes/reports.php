@@ -3,15 +3,16 @@
 
 // Returns:
 // [
-//   'members'    => [['user_id', 'name', 'done', 'in_progress', 'todo', 'total'], ...]  (most done first)
-//   'unassigned' => ['done', 'in_progress', 'todo', 'total']
-//   'totals'     => ['done', 'in_progress', 'todo', 'total']
+//   'members'    => [['user_id', 'name', 'done', 'review', 'in_progress', 'todo', 'total'], ...]  (most done first)
+//   'unassigned' => ['done', 'review', 'in_progress', 'todo', 'total']
+//   'totals'     => ['done', 'review', 'in_progress', 'todo', 'total']
 // ]
 function get_contribution(PDO $pdo, int $projectId): array
 {
     $stmt = $pdo->prepare(
         "SELECT u.user_id, u.name,
                 SUM(CASE WHEN t.status = 'done' THEN 1 ELSE 0 END)        AS done,
+                SUM(CASE WHEN t.status = 'review' THEN 1 ELSE 0 END)      AS review,
                 SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress,
                 SUM(CASE WHEN t.status = 'todo' THEN 1 ELSE 0 END)        AS todo
          FROM project_members pm
@@ -31,6 +32,7 @@ function get_contribution(PDO $pdo, int $projectId): array
 
     $stmt = $pdo->prepare(
         "SELECT SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)        AS done,
+                SUM(CASE WHEN status = 'review' THEN 1 ELSE 0 END)      AS review,
                 SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress,
                 SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END)        AS todo
          FROM tasks
@@ -39,7 +41,7 @@ function get_contribution(PDO $pdo, int $projectId): array
     $stmt->execute([$projectId]);
     $unassigned = count_row($stmt->fetch() ?: []);
 
-    $totals = ['done' => 0, 'in_progress' => 0, 'todo' => 0, 'total' => 0];
+    $totals = ['done' => 0, 'review' => 0, 'in_progress' => 0, 'todo' => 0, 'total' => 0];
     foreach (array_merge($members, [$unassigned]) as $row) {
         foreach ($totals as $key => $value) {
             $totals[$key] += $row[$key];
@@ -49,13 +51,15 @@ function get_contribution(PDO $pdo, int $projectId): array
     return ['members' => $members, 'unassigned' => $unassigned, 'totals' => $totals];
 }
 
-// SUM() can come back as a string or NULL: turn the three counts into whole numbers and add a total.
+// SUM() can come back as a string or NULL: turn the four counts into whole numbers and add a total.
 function count_row(array $row): array
 {
     $done       = (int) ($row['done'] ?? 0);
+    $review     = (int) ($row['review'] ?? 0);
     $inProgress = (int) ($row['in_progress'] ?? 0);
     $todo       = (int) ($row['todo'] ?? 0);
-    return ['done' => $done, 'in_progress' => $inProgress, 'todo' => $todo, 'total' => $done + $inProgress + $todo];
+    return ['done' => $done, 'review' => $review, 'in_progress' => $inProgress, 'todo' => $todo,
+            'total' => $done + $review + $inProgress + $todo];
 }
 
 // A part as a whole percentage of a total (0 when the total is 0).

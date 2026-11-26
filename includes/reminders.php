@@ -20,7 +20,7 @@ function get_reminders_due(PDO $pdo, int $limit): array
          JOIN projects p ON p.project_id = t.project_id
          JOIN users u ON u.user_id = t.assignee_id
          JOIN project_members pm ON pm.project_id = t.project_id AND pm.user_id = t.assignee_id
-         WHERE t.status <> 'done' AND t.reminder_sent_at IS NULL
+         WHERE t.status NOT IN ('review', 'done') AND t.reminder_sent_at IS NULL
            AND t.due_date IS NOT NULL AND t.due_date BETWEEN ? AND ?
          ORDER BY t.due_date, t.task_id
          LIMIT " . max(1, $limit)

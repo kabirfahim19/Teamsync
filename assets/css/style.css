@@ -246,7 +246,7 @@ input:focus, select:focus, .btn:focus-visible {
 .board {
     margin-top: 28px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 24px;
     align-items: start;
 }
@@ -278,6 +278,7 @@ input:focus, select:focus, .btn:focus-visible {
 .dot { width: 10px; height: 10px; border-radius: 50%; }
 .dot-todo { background: #7A8396; }
 .dot-in_progress { background: var(--orange); }
+.dot-review { background: #7B5BD6; }
 .dot-done { background: var(--blue); }
 
 .task-card {
@@ -301,6 +302,7 @@ input:focus, select:focus, .btn:focus-visible {
 .badge-medium { background: var(--success-bg); color: var(--blue-dark); }
 .badge-low    { background: var(--paper-2); color: var(--text-soft); }
 .badge-done   { background: var(--success-bg); color: var(--blue-dark); }
+.badge-review { background: #ECE7FB; color: #4E35A8; }
 
 .avatar {
     width: 28px;
@@ -370,6 +372,7 @@ a.btn-move { display: inline-flex; align-items: center; text-decoration: none; }
 .bar-text b { color: var(--navy); }
 
 .swatch-done, .seg-done { background: var(--blue); }
+.swatch-review, .seg-review { background: #7B5BD6; }
 .swatch-in_progress, .seg-in_progress { background: var(--orange); }
 .swatch-todo, .seg-todo { background: #9AA3B5; }
 
@@ -523,3 +526,7 @@ textarea:focus { outline: 3px solid var(--blue); outline-offset: 2px; }
 .history-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
 .history-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .history-list .dot { flex: none; align-self: center; }
+
+/* Leader's list of tasks to approve (FR-30) */
+.approvals { margin-bottom: 24px; }
+.approvals .due-title { color: inherit; }

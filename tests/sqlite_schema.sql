@@ -31,7 +31,7 @@ CREATE TABLE tasks (
   project_id       INTEGER NOT NULL REFERENCES projects(project_id) ON DELETE CASCADE,
   assignee_id      INTEGER NULL REFERENCES users(user_id) ON DELETE SET NULL,
   title            TEXT NOT NULL,
-  status           TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done')),
+  status           TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'review', 'done')),
   priority         TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
   due_date         TEXT NULL,
   reminder_sent_at TEXT NULL

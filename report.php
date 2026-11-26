@@ -42,11 +42,12 @@ require __DIR__ . '/includes/header.php';
         <?php endif; ?>
     </p>
     <h1>Contribution report</h1>
-    <p class="muted"><?= e($project['title']) ?> · who has finished, started and still has which tasks</p>
+    <p class="muted"><?= e($project['title']) ?> · who has finished, handed in, started and still has which tasks</p>
 
     <div class="stats">
         <div class="stat"><span class="stat-label">Total tasks</span><span class="stat-value"><?= $totals['total'] ?></span></div>
         <div class="stat"><span class="stat-label">Done</span><span class="stat-value stat-blue"><?= $totals['done'] ?> <small>· <?= percent($totals['done'], $totals['total']) ?>%</small></span></div>
+        <div class="stat"><span class="stat-label">Waiting for approval</span><span class="stat-value"><?= $totals['review'] ?></span></div>
         <div class="stat"><span class="stat-label">In progress</span><span class="stat-value"><?= $totals['in_progress'] ?></span></div>
         <div class="stat"><span class="stat-label">To do</span><span class="stat-value"><?= $totals['todo'] ?></span></div>
     </div>
@@ -62,6 +63,7 @@ require __DIR__ . '/includes/header.php';
             <h2 id="chart-title">Tasks by member</h2>
             <div class="legend" aria-hidden="true">
                 <span><i class="swatch swatch-done"></i>Done</span>
+                <span><i class="swatch swatch-review"></i>Review</span>
                 <span><i class="swatch swatch-in_progress"></i>In progress</span>
                 <span><i class="swatch swatch-todo"></i>To do</span>
             </div>
@@ -74,14 +76,14 @@ require __DIR__ . '/includes/header.php';
                         <?= e($r['name']) ?>
                         <?php if ($r['user_id'] === $leaderId): ?><span class="tag">Leader</span><?php endif; ?>
                     </span>
-                    <div class="bar-track" role="img" aria-label="<?= e($r['name']) ?>: <?= $r['done'] ?> done, <?= $r['in_progress'] ?> in progress, <?= $r['todo'] ?> to do">
-                        <?php foreach (['done', 'in_progress', 'todo'] as $status): ?>
+                    <div class="bar-track" role="img" aria-label="<?= e($r['name']) ?>: <?= $r['done'] ?> done, <?= $r['review'] ?> in review, <?= $r['in_progress'] ?> in progress, <?= $r['todo'] ?> to do">
+                        <?php foreach (['done', 'review', 'in_progress', 'todo'] as $status): ?>
                             <?php if ($r[$status] > 0): ?>
                                 <span class="bar-seg seg-<?= $status ?>" style="width: <?= round($r[$status] / $maxTotal * 100, 2) ?>%"></span>
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
-                    <span class="bar-text"><b><?= $r['done'] ?> done</b> · <?= $r['in_progress'] ?> in progress · <?= $r['todo'] ?> to do</span>
+                    <span class="bar-text"><b><?= $r['done'] ?> done</b> · <?= $r['review'] ?> in review · <?= $r['in_progress'] ?> in progress · <?= $r['todo'] ?> to do</span>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -96,6 +98,7 @@ require __DIR__ . '/includes/header.php';
                     <tr>
                         <th scope="col">Member</th>
                         <th scope="col" class="num">Done</th>
+                        <th scope="col" class="num">Review</th>
                         <th scope="col" class="num">In progress</th>
                         <th scope="col" class="num">To do</th>
                         <th scope="col" class="num">Total</th>
@@ -107,6 +110,7 @@ require __DIR__ . '/includes/header.php';
                         <tr>
                             <td><?= e($r['name']) ?></td>
                             <td class="num"><?= $r['done'] ?></td>
+                            <td class="num"><?= $r['review'] ?></td>
                             <td class="num"><?= $r['in_progress'] ?></td>
                             <td class="num"><?= $r['todo'] ?></td>
                             <td class="num"><?= $r['total'] ?></td>
@@ -118,6 +122,7 @@ require __DIR__ . '/includes/header.php';
                     <tr>
                         <th scope="row">All tasks</th>
                         <td class="num"><?= $totals['done'] ?></td>
+                        <td class="num"><?= $totals['review'] ?></td>
                         <td class="num"><?= $totals['in_progress'] ?></td>
                         <td class="num"><?= $totals['todo'] ?></td>
                         <td class="num"><?= $totals['total'] ?></td>

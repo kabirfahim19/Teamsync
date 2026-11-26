@@ -48,3 +48,23 @@ function end_session(): void
         session_destroy();
     }
 }
+
+// Is the account this session belongs to still there, with the same role? (issue #56)
+// Importing the demo data again deletes the demo accounts and makes them anew with new ids, so a browser
+// that stayed logged in would otherwise go on as an account that no longer exists.
+function session_account_is_current(PDO $pdo, int $userId, string $role): bool
+{
+    $stmt = $pdo->prepare('SELECT role FROM users WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    return $stmt->fetchColumn() === $role;
+}
+
+// Log out but keep a session: empty it and give it a new id, so the page can go on
+// (for example show the login form with a fresh CSRF token).
+function forget_login(): void
+{
+    $_SESSION = [];
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_regenerate_id(true);
+    }
+}

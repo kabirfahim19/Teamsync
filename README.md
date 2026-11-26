@@ -255,7 +255,7 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - Every form and every task move carries a CSRF token
 - Every page checks the user's role and project membership; professors cannot change anything
 - All output is escaped with `htmlspecialchars()` (no XSS)
-- The session ID is renewed at login. The session cookie is `HttpOnly` (JavaScript cannot read it), `SameSite=Lax`, and `Secure` on https, and PHP refuses session IDs it did not create
+- The session ID is renewed at login. The session cookie is `HttpOnly` (JavaScript cannot read it), `SameSite=Lax`, and `Secure` on https, and PHP refuses session IDs it did not create. If an account is deleted or its role changes, a browser still logged in to it is logged out at its next click
 - Every page sends security headers. The Content-Security-Policy lets scripts run only from our own files, so a script typed into a title or a comment cannot run even if escaping were missed. No other site may show Teamsync inside a frame (clickjacking), and links to other sites never get our page addresses
 - After 5 wrong passwords for one email within 15 minutes, logging in to it is blocked for 15 minutes
 - Signing up as Professor needs a secret code set in `config/db.php`

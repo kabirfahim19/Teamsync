@@ -831,6 +831,40 @@ test('#48  no page starts a session without these settings', function () {
 });
 
 
+group('Deleted or changed accounts (#56)');
+
+db_test('#56  a session counts only while its account exists with the same role', function (PDO $pdo) {
+    $alex = add_user($pdo, 'Alex Kim', 'alex@demo.test', 'leader');
+    check_same(true, session_account_is_current($pdo, $alex, 'leader'), 'account as it was at login');
+    check_same(false, session_account_is_current($pdo, $alex, 'member'), 'role changed since login');
+    check_same(false, session_account_is_current($pdo, 9999, 'leader'), 'no such account');
+});
+
+db_test('#56  importing the demo data again logs out a browser still logged in as an old demo account', function (PDO $pdo) {
+    $old = add_user($pdo, 'Alex Kim', 'alex@demo.test', 'leader');
+    $pdo->exec("DELETE FROM users WHERE email LIKE '%@demo.test'");   // what demo_data.sql does first
+    $new = add_user($pdo, 'Alex Kim', 'alex@demo.test', 'leader');    // same person, new id
+    check($new !== $old, 'the new demo account should get a new id');
+    check_same(false, session_account_is_current($pdo, $old, 'leader'), 'old session');
+    check_same(true, session_account_is_current($pdo, $new, 'leader'), 'after logging in again');
+});
+
+test('#56  logging out this way empties the session (the page then shows the login form)', function () {
+    $_SESSION = ['user_id' => 7, 'name' => 'Alex Kim', 'role' => 'leader', 'csrf_token' => 'old'];
+    forget_login();
+    check_same([], $_SESSION);
+});
+
+test('#56  every page checks the account right after connecting to the database', function () {
+    $auth = file_get_contents(APP_DIR . '/includes/auth.php');
+    $connect = strpos($auth, 'require_once $configFile;');
+    $check = strpos($auth, 'session_account_is_current($pdo');
+    check($connect !== false && $check !== false, 'includes/auth.php must call session_account_is_current()');
+    check($check > $connect, 'the check needs $pdo, so it must come after config/db.php is loaded');
+    check(str_contains(substr($auth, $check, 200), 'forget_login()'), 'a session whose account is gone must be logged out');
+});
+
+
 group('Security headers (#50)');
 
 // The Content-Security-Policy as ['script-src' => ["'self'"], ...]

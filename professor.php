@@ -10,7 +10,7 @@ $stmt = $pdo->prepare(
             (SELECT COUNT(*) FROM project_members pm WHERE pm.project_id = p.project_id) AS members,
             (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.project_id) AS total,
             (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.project_id AND t.status = 'done') AS done,
-            (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.project_id AND t.status <> 'done'
+            (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.project_id AND t.status NOT IN ('review', 'done')
                 AND t.due_date IS NOT NULL AND t.due_date < ?) AS overdue
      FROM projects p
      JOIN users u ON u.user_id = p.leader_id"

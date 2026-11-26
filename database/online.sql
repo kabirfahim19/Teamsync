@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   project_id  INT          NOT NULL,
   assignee_id INT          NULL,
   title       VARCHAR(100) NOT NULL,
-  status      ENUM('todo', 'in_progress', 'done') NOT NULL DEFAULT 'todo',
+  status      ENUM('todo', 'in_progress', 'review', 'done') NOT NULL DEFAULT 'todo',   -- review: waiting for the leader (FR-30)
   priority    ENUM('low', 'medium', 'high')       NOT NULL DEFAULT 'medium',
   due_date    DATE         NULL,
   reminder_sent_at DATETIME NULL,              -- when the email reminder went out (FR-19)
@@ -98,6 +98,10 @@ CREATE TABLE IF NOT EXISTS task_events (
 DELETE FROM projects WHERE leader_id IN (SELECT user_id FROM users WHERE email LIKE '%@demo.test');
 DELETE FROM users WHERE email LIKE '%@demo.test';
 
+-- Tasks can wait in Review for the leader's approval (FR-30). A database made before that gets the new status here;
+-- running it again changes nothing.
+ALTER TABLE tasks MODIFY status ENUM('todo', 'in_progress', 'review', 'done') NOT NULL DEFAULT 'todo';
+
 -- Today's date in Korea. A free host's database clock can be in another time zone, where CURDATE()
 -- is still yesterday. With @today the demo dates are right whenever and wherever you import this file.
 SET @today = DATE(UTC_TIMESTAMP() + INTERVAL 9 HOUR);
@@ -131,7 +135,7 @@ SET @ana     = (SELECT user_id FROM users WHERE email = 'ana@demo.test');
 SET @mark    = (SELECT user_id FROM users WHERE email = 'mark@demo.test');
 SET @eunbi   = (SELECT user_id FROM users WHERE email = 'eunbi@demo.test');
 
--- 3. Team 1: Campus Cafe Order App (12 tasks, 4 done)
+-- 3. Team 1: Campus Cafe Order App (12 tasks, 4 done, 1 waiting for Alex's approval)
 INSERT INTO projects (title, invite_code, leader_id) VALUES ('Campus Cafe Order App', 'TS-K7QM', @alex);
 SET @p1 = LAST_INSERT_ID();
 INSERT INTO project_members (project_id, user_id) VALUES (@p1, @alex), (@p1, @minji), (@p1, @daniel), (@p1, @sara);
@@ -140,7 +144,7 @@ INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) V
   (@p1, @minji,  'Design the ER diagram',       'done',        'medium', @today - INTERVAL 4 DAY),
   (@p1, @daniel, 'Build the login page',        'done',        'high',   @today - INTERVAL 3 DAY),
   (@p1, @sara,   'Menu page layout',            'done',        'medium', @today - INTERVAL 1 DAY),
-  (@p1, @daniel, 'Order cart and checkout',     'in_progress', 'high',   @today + INTERVAL 1 DAY),
+  (@p1, @daniel, 'Order cart and checkout',     'review',      'high',   @today + INTERVAL 1 DAY),
   (@p1, @minji,  'Draw the UML class diagram',  'in_progress', 'medium', @today + INTERVAL 3 DAY),
   (@p1, @alex,   'Admin menu editor',           'in_progress', 'medium', @today + INTERVAL 2 DAY),
   (@p1, @alex,   'Review team pull requests',   'todo',        'high',   @today),
@@ -175,7 +179,8 @@ INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) V
   (@p3, @ana,     'Favourite stops',       'todo',        'low',    @today + INTERVAL 7 DAY),
   (@p3, @hyunwoo, 'Test plan',             'todo',        'medium', @today + INTERVAL 5 DAY);
 
--- 6. History (FR-29): each leader added the tasks two weeks ago; each member started and finished their own
+-- 6. History (FR-29): each leader added the tasks two weeks ago; each member started their own,
+--    handed it in to Review, and the leader approved it to Done (FR-30). Leaders finish their own tasks directly.
 INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
 SELECT t.task_id, p.leader_id, NULL, 'todo', TIMESTAMP(@today - INTERVAL 14 DAY, '10:00:00')
 FROM tasks t JOIN projects p ON p.project_id = t.project_id
@@ -186,11 +191,19 @@ SELECT t.task_id, t.assignee_id, 'todo', 'in_progress',
        CASE WHEN t.status = 'done' THEN TIMESTAMP(t.due_date - INTERVAL 3 DAY, '14:00:00')
             ELSE TIMESTAMP(@today - INTERVAL 2 DAY, '14:00:00') END
 FROM tasks t
-WHERE t.project_id IN (@p1, @p2, @p3) AND t.status IN ('in_progress', 'done');
+WHERE t.project_id IN (@p1, @p2, @p3) AND t.status IN ('in_progress', 'review', 'done');
 
 INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
-SELECT t.task_id, t.assignee_id, 'in_progress', 'done', TIMESTAMP(t.due_date - INTERVAL 1 DAY, '18:00:00')
-FROM tasks t
+SELECT t.task_id, t.assignee_id, 'in_progress', 'review',
+       CASE WHEN t.status = 'done' THEN TIMESTAMP(t.due_date - INTERVAL 1 DAY, '15:00:00')
+            ELSE TIMESTAMP(@today, '09:35:00') END
+FROM tasks t JOIN projects p ON p.project_id = t.project_id
+WHERE t.project_id IN (@p1, @p2, @p3) AND t.status IN ('review', 'done') AND t.assignee_id <> p.leader_id;
+
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, p.leader_id, CASE WHEN t.assignee_id = p.leader_id THEN 'in_progress' ELSE 'review' END, 'done',
+       TIMESTAMP(t.due_date - INTERVAL 1 DAY, '18:00:00')
+FROM tasks t JOIN projects p ON p.project_id = t.project_id
 WHERE t.project_id IN (@p1, @p2, @p3) AND t.status = 'done';
 
 -- 7. Comments on Team 1 tasks (FR-28)
@@ -200,7 +213,7 @@ SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw
 INSERT INTO task_comments (task_id, user_id, body, created_at) VALUES
   (@cart,  @daniel, 'The cart works. I still need the total price with the student discount.', TIMESTAMP(@today - INTERVAL 1 DAY, '15:20:00')),
   (@cart,  @alex,   'The discount is 10% with a student card. Can you finish it by tomorrow?',  TIMESTAMP(@today - INTERVAL 1 DAY, '16:05:00')),
-  (@cart,  @daniel, 'Yes, I will push it tonight.',                                              TIMESTAMP(@today, '09:40:00')),
+  (@cart,  @daniel, 'Pushed it last night. The card is in Review now.',                         TIMESTAMP(@today, '09:40:00')),
   (@tests, @sara,   'I am waiting for the checkout page, so I will test login and the menu first.', TIMESTAMP(@today - INTERVAL 2 DAY, '11:00:00')),
   (@tests, @minji,  'I can help with the menu page tests.',                                      TIMESTAMP(@today - INTERVAL 2 DAY, '13:30:00')),
   (@uml,   @minji,  'The first version is in our shared folder. Comments welcome!',              TIMESTAMP(@today - INTERVAL 3 DAY, '20:15:00'));

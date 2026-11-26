@@ -1,5 +1,6 @@
 <?php
-// Kanban board of one project: To Do, In Progress, Done. Issue #3
+// Kanban board of one project: To Do, In Progress, Review, Done. Issue #3
+// A member hands a finished task in to Review; only the leader moves it to Done (FR-30).
 // Each card links to its task page with the comments (FR-28).
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/projects.php';
@@ -31,7 +32,7 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM project_members WHERE project_id = ?
 $stmt->execute([$projectId]);
 $memberCount = (int) $stmt->fetchColumn();
 
-$total    = count($columns['todo']) + count($columns['in_progress']) + count($columns['done']);
+$total    = array_sum(array_map('count', $columns));
 $done     = count($columns['done']);
 $progress = $total ? (int) round($done / $total * 100) : 0;
 
@@ -83,7 +84,14 @@ require __DIR__ . '/includes/header.php';
     <p id="board-error" class="alert alert-error" role="alert" hidden></p>
     <p id="board-status" class="visually-hidden" role="status" aria-live="polite"></p>
     <?php if (!$isProfessor && $total > 0): ?>
-        <p class="muted small drag-hint">Drag a card to another column, or use the buttons on it.</p>
+        <p class="muted small drag-hint">
+            Drag a card to another column, or use the buttons on it.
+            <?php if ($isLeader): ?>
+                Tasks in Review wait for you: Approve moves them to Done.
+            <?php else: ?>
+                Finished a task? Move it to Review; your team leader approves it to Done.
+            <?php endif; ?>
+        </p>
     <?php endif; ?>
 
     <div class="board" data-csrf="<?= e(csrf_token()) ?>">
@@ -97,7 +105,10 @@ require __DIR__ . '/includes/header.php';
                 <p class="column-empty" <?= $columns[$status] ? 'hidden' : '' ?>>No tasks here.</p>
 
                 <?php foreach ($columns[$status] as $task): ?>
-                    <?php $canMove = can_move_task($task, $userId, $leaderId); ?>
+                    <?php
+                    $moves   = can_move_task($task, $userId, $leaderId) ? task_moves($status, $isLeader) : [];
+                    $targets = $moves ? task_drop_targets($status, $isLeader) : [];
+                    ?>
                     <article class="task-card"
                              data-task-id="<?= (int) $task['task_id'] ?>"
                              data-status="<?= e($status) ?>"
@@ -106,10 +117,13 @@ require __DIR__ . '/includes/header.php';
                              data-priority-label="<?= e(TASK_PRIORITIES[$task['priority']] ?? $task['priority']) ?>"
                              data-due-label="<?= $task['due_date'] ? e(date('M j', strtotime($task['due_date']))) : '' ?>"
                              data-late="<?= $task['due_date'] && $task['due_date'] < date('Y-m-d') ? '1' : '0' ?>"
-                             <?= $canMove ? 'draggable="true"' : '' ?>>
+                             data-targets="<?= e(implode(' ', $targets)) ?>"
+                             <?= $targets ? 'draggable="true"' : '' ?>>
                         <div class="task-top">
                             <?php if ($status === 'done'): ?>
                                 <span class="badge badge-done task-badge">Completed</span>
+                            <?php elseif ($status === 'review'): ?>
+                                <span class="badge badge-review task-badge">Waiting for approval</span>
                             <?php else: ?>
                                 <span class="badge badge-<?= e($task['priority']) ?> task-badge"><?= e(TASK_PRIORITIES[$task['priority']] ?? $task['priority']) ?></span>
                             <?php endif; ?>
@@ -135,12 +149,12 @@ require __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                         </div>
 
-                        <?php if ($canMove): ?>
+                        <?php if ($moves || $isLeader): ?>
                             <div class="task-actions">
                                 <?php if ($isLeader): ?>
                                     <a class="btn-move" href="task_form.php?task=<?= (int) $task['task_id'] ?>" aria-label="Edit “<?= e($task['title']) ?>”">Edit</a>
                                 <?php endif; ?>
-                                <?php foreach (task_moves($status) as [$to, $buttonLabel]): ?>
+                                <?php foreach ($moves as [$to, $buttonLabel]): ?>
                                     <form method="post" action="api/update_task.php">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="task_id" value="<?= (int) $task['task_id'] ?>">

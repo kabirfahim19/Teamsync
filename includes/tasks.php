@@ -6,8 +6,13 @@ require_once __DIR__ . '/history.php';
 const TASK_STATUSES = [
     'todo'        => 'To Do',
     'in_progress' => 'In Progress',
+    'review'      => 'Review',
     'done'        => 'Done',
 ];
+
+// Handed in: waiting for the leader's approval (Review) or approved (Done). Such a task is not late
+// any more, is not in "Due soon" and gets no reminder email (FR-30).
+const TASK_HANDED_IN = ['review', 'done'];
 
 const TASK_PRIORITIES = [
     'high'   => 'High',
@@ -16,7 +21,7 @@ const TASK_PRIORITIES = [
 ];
 
 // All tasks of a project, with the assignee's name and the number of comments, grouped by status.
-// Returns ['todo' => [...], 'in_progress' => [...], 'done' => [...]].
+// Returns ['todo' => [...], 'in_progress' => [...], 'review' => [...], 'done' => [...]].
 function get_tasks_by_status(PDO $pdo, int $projectId): array
 {
     $stmt = $pdo->prepare(
@@ -43,6 +48,25 @@ function can_move_task(array $task, int $userId, int $leaderId): bool
     return $userId === $leaderId || $userId === (int) $task['assignee_id'];
 }
 
+// Where a task may go from its column (FR-30). The leader may move it anywhere. A member moves their own
+// task between To Do, In Progress and Review; only the leader moves a task into Done or out of it,
+// so a task counts as done only when the leader has approved it.
+function task_drop_targets(string $status, bool $isLeader): array
+{
+    if (!isset(TASK_STATUSES[$status])) {
+        return [];
+    }
+    $allowed = $isLeader ? array_keys(TASK_STATUSES) : ($status === 'done' ? [] : ['todo', 'in_progress', 'review']);
+    return array_values(array_diff($allowed, [$status]));
+}
+
+// May this user move this task to that column?
+function can_move_task_to(array $task, int $userId, int $leaderId, string $to): bool
+{
+    return can_move_task($task, $userId, $leaderId)
+        && in_array($to, task_drop_targets($task['status'], $userId === $leaderId), true);
+}
+
 // Moves a task to another column and writes the move into the task's history (FR-29).
 // Both are saved together or not at all.
 function move_task(PDO $pdo, int $taskId, string $from, string $to, int $userId): void
@@ -59,10 +83,10 @@ function move_task(PDO $pdo, int $taskId, string $from, string $to, int $userId)
     }
 }
 
-// Is the task late? (deadline before today and not finished)
+// Is the task late? (deadline before today and not handed in)
 function is_overdue(array $task): bool
 {
-    return $task['status'] !== 'done'
+    return !in_array($task['status'], TASK_HANDED_IN, true)
         && !empty($task['due_date'])
         && $task['due_date'] < date('Y-m-d');
 }
@@ -181,7 +205,7 @@ function get_due_soon(PDO $pdo, int $userId, int $days = 2): array
          FROM tasks t
          JOIN projects p ON p.project_id = t.project_id
          JOIN project_members pm ON pm.project_id = t.project_id AND pm.user_id = t.assignee_id
-         WHERE t.assignee_id = ? AND t.status <> 'done'
+         WHERE t.assignee_id = ? AND t.status NOT IN ('review', 'done')
            AND t.due_date IS NOT NULL AND t.due_date <= ?
          ORDER BY t.due_date, CASE t.priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, t.task_id"
     );
@@ -209,12 +233,36 @@ function due_label(string $dueDate): string
 }
 
 // The buttons shown on a card: where the task can go from its current column.
-function task_moves(string $status): array
+// A member hands a finished task in to Review; the leader approves it to Done or sends it back (FR-30).
+function task_moves(string $status, bool $isLeader): array
 {
-    $moves = [
-        'todo'        => [['in_progress', 'Start →']],
-        'in_progress' => [['todo', '← Back'], ['done', 'Done →']],
-        'done'        => [['in_progress', '← Reopen']],
-    ];
+    $moves = $isLeader
+        ? [
+            'todo'        => [['in_progress', 'Start →']],
+            'in_progress' => [['todo', '← Back'], ['done', 'Done →']],
+            'review'      => [['in_progress', '← Send back'], ['done', 'Approve →']],
+            'done'        => [['in_progress', '← Reopen']],
+        ]
+        : [
+            'todo'        => [['in_progress', 'Start →']],
+            'in_progress' => [['todo', '← Back'], ['review', 'Review →']],
+            'review'      => [['in_progress', '← Back']],
+            'done'        => [],
+        ];
     return $moves[$status] ?? [];
+}
+
+// Tasks in Review in the projects this user leads: the leader's list of tasks to approve (FR-30).
+function get_waiting_for_review(PDO $pdo, int $leaderId): array
+{
+    $stmt = $pdo->prepare(
+        "SELECT t.task_id, t.title, u.name AS assignee_name, p.project_id, p.title AS project_title
+         FROM tasks t
+         JOIN projects p ON p.project_id = t.project_id
+         LEFT JOIN users u ON u.user_id = t.assignee_id
+         WHERE p.leader_id = ? AND t.status = 'review'
+         ORDER BY p.title, t.task_id"
+    );
+    $stmt->execute([$leaderId]);
+    return $stmt->fetchAll();
 }

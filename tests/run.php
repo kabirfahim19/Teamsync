@@ -312,30 +312,33 @@ db_test('TC-09  after joining, the user is a member of the project', function (P
 
 group('Tasks and the board (FR-10 to FR-15)');
 
-db_test('TC-10  the board has three columns with the right tasks, high priority first', function (PDO $pdo) {
+db_test('TC-10  the board has four columns with the right tasks, high priority first', function (PDO $pdo) {
     $team = make_team($pdo);
     add_task($pdo, $team['pid'], $team['alex'], 'Low, tomorrow', 'todo', day(1), 'low');
     add_task($pdo, $team['pid'], $team['alex'], 'High, no date', 'todo', null, 'high');
     add_task($pdo, $team['pid'], $team['alex'], 'High, tomorrow', 'todo', day(1), 'high');
     add_task($pdo, $team['pid'], $team['minji'], 'Medium, today', 'todo', day(0), 'medium');
     add_task($pdo, $team['pid'], $team['minji'], 'Doing', 'in_progress', null);
+    add_task($pdo, $team['pid'], $team['minji'], 'Handed in', 'review', null);
     add_task($pdo, $team['pid'], null, 'Finished', 'done', null);
     $columns = get_tasks_by_status($pdo, $team['pid']);
-    check_same(['todo', 'in_progress', 'done'], array_keys($columns), 'columns');
+    check_same(['todo', 'in_progress', 'review', 'done'], array_keys($columns), 'columns');
     check_same(['High, tomorrow', 'High, no date', 'Medium, today', 'Low, tomorrow'], titles($columns['todo']), 'To Do order');
     check_same(['Doing'], titles($columns['in_progress']), 'In Progress');
+    check_same(['Handed in'], titles($columns['review']), 'Review');
     check_same(['Finished'], titles($columns['done']), 'Done');
 });
 
-db_test('FR-10  an empty project still shows all three columns', function (PDO $pdo) {
+db_test('FR-10  an empty project still shows all four columns', function (PDO $pdo) {
     $team = make_team($pdo);
-    check_same(['todo' => [], 'in_progress' => [], 'done' => []], get_tasks_by_status($pdo, $team['pid']));
+    check_same(['todo' => [], 'in_progress' => [], 'review' => [], 'done' => []], get_tasks_by_status($pdo, $team['pid']));
 });
 
-test('TC-11  a task past its due date is overdue, unless it is done', function () {
+test('TC-11  a task past its due date is overdue, unless it is handed in or done', function () {
     check_same(true, is_overdue(['status' => 'todo', 'due_date' => day(-1)]), 'yesterday, To Do');
     check_same(true, is_overdue(['status' => 'in_progress', 'due_date' => day(-5)]), '5 days ago, In Progress');
     check_same(false, is_overdue(['status' => 'done', 'due_date' => day(-1)]), 'yesterday, Done');
+    check_same(false, is_overdue(['status' => 'review', 'due_date' => day(-1)]), 'yesterday, handed in to Review');
     check_same(false, is_overdue(['status' => 'todo', 'due_date' => day(0)]), 'today');
     check_same(false, is_overdue(['status' => 'todo', 'due_date' => null]), 'no due date');
 });
@@ -417,10 +420,15 @@ test('TC-15  only the assignee or the leader may move a task', function () {
 });
 
 test('FR-15  each column shows only the moves that make sense', function () {
-    check_same([['in_progress', 'Start →']], task_moves('todo'));
-    check_same([['todo', '← Back'], ['done', 'Done →']], task_moves('in_progress'));
-    check_same([['in_progress', '← Reopen']], task_moves('done'));
-    check_same([], task_moves('lost'), 'unknown status');
+    check_same([['in_progress', 'Start →']], task_moves('todo', false), 'member, To Do');
+    check_same([['todo', '← Back'], ['review', 'Review →']], task_moves('in_progress', false), 'member, In Progress');
+    check_same([['in_progress', '← Back']], task_moves('review', false), 'member, Review');
+    check_same([], task_moves('done', false), 'member, Done');
+    check_same([['in_progress', 'Start →']], task_moves('todo', true), 'leader, To Do');
+    check_same([['todo', '← Back'], ['done', 'Done →']], task_moves('in_progress', true), 'leader, In Progress');
+    check_same([['in_progress', '← Send back'], ['done', 'Approve →']], task_moves('review', true), 'leader, Review');
+    check_same([['in_progress', '← Reopen']], task_moves('done', true), 'leader, Done');
+    check_same([], task_moves('lost', true), 'unknown status');
 });
 
 test('FR-10  avatar initials: "Kabir Md Fahim" becomes "KM"', function () {
@@ -442,6 +450,7 @@ db_test('TC-18  my unfinished tasks due within 2 days are listed, overdue first'
     add_task($pdo, $team['pid'], $team['alex'], 'Today', 'todo', day(0), 'high');
     add_task($pdo, $team['pid'], $team['alex'], 'In 3 days', 'todo', day(3));
     add_task($pdo, $team['pid'], $team['alex'], 'Done already', 'done', day(1));
+    add_task($pdo, $team['pid'], $team['alex'], 'Handed in', 'review', day(-1));
     add_task($pdo, $team['pid'], $team['alex'], 'No date', 'todo', null);
     add_task($pdo, $team['pid'], $team['minji'], 'Someone else', 'todo', day(1));
     check_same(['Overdue', 'Today', 'Tomorrow', 'In 2 days'], titles(get_due_soon($pdo, $team['alex'])));
@@ -453,6 +462,7 @@ db_test('FR-19  reminders are for unfinished tasks due today or tomorrow that go
     add_task($pdo, $team['pid'], $team['minji'], 'Tomorrow', 'in_progress', day(1));
     add_task($pdo, $team['pid'], $team['alex'], 'Today', 'todo', day(0));
     add_task($pdo, $team['pid'], $team['alex'], 'Done', 'done', day(1));
+    add_task($pdo, $team['pid'], $team['alex'], 'Handed in', 'review', day(1));
     add_task($pdo, $team['pid'], $team['alex'], 'In 2 days', 'todo', day(2));
     add_task($pdo, $team['pid'], $team['alex'], 'Overdue', 'todo', day(-1));
     add_task($pdo, $team['pid'], null, 'Unassigned', 'todo', day(1));
@@ -552,7 +562,7 @@ db_test('TC-20  per-member counts match the board, most done first', function (P
     foreach (['done', 'done', 'in_progress'] as $status) {
         add_task($pdo, $team['pid'], $team['alex'], "Alex $status", $status);
     }
-    foreach (['done', 'todo', 'todo'] as $status) {
+    foreach (['done', 'todo', 'todo', 'review'] as $status) {
         add_task($pdo, $team['pid'], $team['minji'], "Minji $status", $status);
     }
     add_task($pdo, $team['pid'], null, 'Nobody todo', 'todo');
@@ -562,16 +572,17 @@ db_test('TC-20  per-member counts match the board, most done first', function (P
     add_task($pdo, $other['project_id'], $team['alex'], 'Other project', 'done');
 
     $report = get_contribution($pdo, $team['pid']);
-    $rows = array_map(fn($m) => [$m['name'], $m['done'], $m['in_progress'], $m['todo'], $m['total']], $report['members']);
-    check_same([['Alex Kim', 2, 1, 0, 3], ['Minji Lee', 1, 0, 2, 3], ['Yuna Park', 0, 0, 0, 0]], $rows, 'members');
-    check_same(['done' => 1, 'in_progress' => 0, 'todo' => 1, 'total' => 2], $report['unassigned'], 'unassigned');
-    check_same(['done' => 4, 'in_progress' => 1, 'todo' => 3, 'total' => 8], $report['totals'], 'totals');
-    check_same(50, percent($report['totals']['done'], $report['totals']['total']), 'progress');
+    $rows = array_map(fn($m) => [$m['name'], $m['done'], $m['review'], $m['in_progress'], $m['todo'], $m['total']], $report['members']);
+    check_same([['Alex Kim', 2, 0, 1, 0, 3], ['Minji Lee', 1, 1, 0, 2, 4], ['Yuna Park', 0, 0, 0, 0, 0]], $rows, 'members');
+    check_same(['done' => 1, 'review' => 0, 'in_progress' => 0, 'todo' => 1, 'total' => 2], $report['unassigned'], 'unassigned');
+    check_same(['done' => 4, 'review' => 1, 'in_progress' => 1, 'todo' => 3, 'total' => 9], $report['totals'], 'totals');
+    check_same(44, percent($report['totals']['done'], $report['totals']['total']), 'progress: a task in Review is not done yet');
 });
 
 test('FR-20  counts from the database become whole numbers', function () {
-    check_same(['done' => 2, 'in_progress' => 0, 'todo' => 1, 'total' => 3], count_row(['done' => '2', 'in_progress' => null, 'todo' => '1']));
-    check_same(['done' => 0, 'in_progress' => 0, 'todo' => 0, 'total' => 0], count_row([]));
+    check_same(['done' => 2, 'review' => 1, 'in_progress' => 0, 'todo' => 1, 'total' => 4],
+               count_row(['done' => '2', 'review' => '1', 'in_progress' => null, 'todo' => '1']));
+    check_same(['done' => 0, 'review' => 0, 'in_progress' => 0, 'todo' => 0, 'total' => 0], count_row([]));
 });
 
 
@@ -786,6 +797,69 @@ db_test('FR-28  the task page gets the task with its assignee', function (PDO $p
                [$task['title'], $task['status'], $task['priority'], $task['due_date'], $task['assignee_name']]);
     check_same(null, get_task_details($pdo, $free)['assignee_name'], 'unassigned');
     check_same(null, get_task_details($pdo, 999), 'missing task');
+});
+
+
+group('Leader approval: the Review column (FR-30)');
+
+test('FR-30  a member moves their own task between To Do, In Progress and Review, never into or out of Done', function () {
+    $task = fn(string $status) => ['assignee_id' => 7, 'status' => $status];
+    check_same(true, can_move_task_to($task('in_progress'), 7, 1, 'review'), 'hand in');
+    check_same(true, can_move_task_to($task('review'), 7, 1, 'in_progress'), 'take it back');
+    check_same(true, can_move_task_to($task('todo'), 7, 1, 'review'), 'straight to Review');
+    check_same(false, can_move_task_to($task('in_progress'), 7, 1, 'done'), 'into Done');
+    check_same(false, can_move_task_to($task('review'), 7, 1, 'done'), 'approve own task');
+    check_same(false, can_move_task_to($task('done'), 7, 1, 'in_progress'), 'out of Done');
+    check_same(false, can_move_task_to($task('in_progress'), 8, 1, 'review'), "another member's task");
+    check_same(false, can_move_task_to($task('todo'), 7, 1, 'todo'), 'same column');
+});
+
+test('FR-30  the leader may move any task to any other column, Review to Done included', function () {
+    foreach (array_keys(TASK_STATUSES) as $from) {
+        foreach (array_keys(TASK_STATUSES) as $to) {
+            check_same($from !== $to, can_move_task_to(['assignee_id' => 7, 'status' => $from], 1, 1, $to), "$from to $to");
+        }
+    }
+});
+
+test('FR-30  every button on a card leads to a column the user may drop the card in', function () {
+    foreach ([true, false] as $isLeader) {
+        foreach (array_keys(TASK_STATUSES) as $status) {
+            foreach (task_moves($status, $isLeader) as [$to]) {
+                check(in_array($to, task_drop_targets($status, $isLeader), true),
+                      ($isLeader ? 'leader' : 'member') . ": button from $status to $to is not allowed");
+            }
+        }
+    }
+});
+
+db_test('FR-30  a task in Review is handed in: not late, not in "Due soon", no reminder', function (PDO $pdo) {
+    $team = make_team($pdo);
+    add_task($pdo, $team['pid'], $team['alex'], 'Handed in late', 'review', day(-2));
+    add_task($pdo, $team['pid'], $team['alex'], 'Handed in early', 'review', day(1));
+    add_task($pdo, $team['pid'], $team['alex'], 'Still working', 'in_progress', day(1));
+    check_same(false, is_overdue(['status' => 'review', 'due_date' => day(-2)]), 'not overdue');
+    check_same(['Still working'], titles(get_due_soon($pdo, $team['alex'])), 'due soon');
+    check_same(['Still working'], titles(get_reminders_due($pdo, 10)), 'reminders');
+});
+
+db_test('FR-30  the leader sees the tasks waiting for approval, only in projects they lead', function (PDO $pdo) {
+    $team = make_team($pdo);
+    add_task($pdo, $team['pid'], $team['minji'], 'Menu page layout', 'review');
+    add_task($pdo, $team['pid'], $team['alex'], 'Login page', 'in_progress');
+    $otherLeader = add_user($pdo, 'Hyunwoo Lim', 'hyunwoo@demo.test', 'leader');
+    $other = create_project($pdo, 'Bus Arrival Bot', $otherLeader);
+    add_task($pdo, $other['project_id'], $otherLeader, 'Other team', 'review');
+    $waiting = get_waiting_for_review($pdo, $team['leader']);
+    check_same(['Menu page layout'], titles($waiting), 'tasks');
+    check_same('Minji Lee', $waiting[0]['assignee_name'], 'who handed it in');
+    check_same([], get_waiting_for_review($pdo, $team['minji']), 'a member leads nothing');
+});
+
+test('FR-30  the move API checks the column as well as the person', function () {
+    $api = file_get_contents(APP_DIR . '/api/update_task.php');
+    check(str_contains($api, 'can_move_task_to($task, $userId'), 'api/update_task.php must call can_move_task_to()');
+    check(strpos($api, 'can_move_task_to(') < strpos($api, 'move_task($pdo'), 'the check must come before the move');
 });
 
 

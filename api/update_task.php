@@ -56,6 +56,10 @@ if (!is_project_member($pdo, (int) $task['project_id'], $userId)) {
 if (!can_move_task($task, $userId, (int) $task['leader_id'])) {
     reply(403, 'Only the person assigned to this task or the team leader can move it.', $wantsJson);
 }
+// Only the leader moves a task into Done or out of it; a member hands a finished task in to Review (FR-30).
+if ($task['status'] !== $status && !can_move_task_to($task, $userId, (int) $task['leader_id'], $status)) {
+    reply(403, 'Only the team leader can move a task into Done or out of it. Move your finished task to Review.', $wantsJson);
+}
 
 if ($task['status'] !== $status) {
     move_task($pdo, $taskId, $task['status'], $status, $userId);   // also writes the task's history
@@ -68,7 +72,17 @@ if ($wantsJson) {
     $total    = (int) $count['total'];
     $done     = (int) $count['done'];
     $progress = $total ? (int) round($done / $total * 100) : 0;
-    reply(200, 'Task moved.', true, ['status' => $status, 'done' => $done, 'total' => $total, 'progress' => $progress]);
+    // The card's new buttons and the columns it may be dragged to, for this user (the browser draws them).
+    $isLeader = $userId === (int) $task['leader_id'];
+    reply(200, 'Task moved.', true, [
+        'status'   => $status,
+        'labels'   => TASK_STATUSES,
+        'moves'    => task_moves($status, $isLeader),
+        'targets'  => task_drop_targets($status, $isLeader),
+        'done'     => $done,
+        'total'    => $total,
+        'progress' => $progress,
+    ]);
 }
 
 header('Location: ../board.php?project=' . (int) $task['project_id']);

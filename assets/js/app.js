@@ -44,16 +44,10 @@ function initProfessorCodeField() {
 }
 
 // ---------- Kanban drag-and-drop (Issue #12) ----------
-// Cards the user may move have draggable="true" (the server decides).
+// Cards the user may move have draggable="true", and data-targets lists the columns they may be
+// dropped in (the server decides: a member cannot drop a card in Done, FR-30).
 // A drop sends the same request as the buttons, to api/update_task.php, and asks for JSON.
-// Without JavaScript the Start / Done / Back buttons still work.
-
-const STATUS_LABELS = { todo: 'To Do', in_progress: 'In Progress', done: 'Done' };
-const MOVES = {
-    todo: [['in_progress', 'Start →']],
-    in_progress: [['todo', '← Back'], ['done', 'Done →']],
-    done: [['in_progress', '← Reopen']],
-};
+// The answer brings the card's new buttons and targets. Without JavaScript the buttons still work.
 
 function initBoardDragAndDrop() {
     const board = document.querySelector('.board[data-csrf]');
@@ -84,8 +78,9 @@ function initBoardDragAndDrop() {
 
     board.querySelectorAll('.column').forEach((column) => {
         column.addEventListener('dragover', (event) => {
-            if (!dragged || dragged.dataset.status === column.dataset.status) {
-                return; // not a drop target: the card is already in this column
+            const targets = dragged ? (dragged.dataset.targets || '').split(' ') : [];
+            if (!targets.includes(column.dataset.status)) {
+                return; // not a drop target: the card is already here, or this user may not put it here
             }
             event.preventDefault(); // this column accepts the drop
             event.dataTransfer.dropEffect = 'move';
@@ -152,21 +147,33 @@ async function moveCard(csrf, card, column) {
 
     column.appendChild(card);
     card.dataset.status = status;
-    refreshCard(csrf, card);
+    refreshCard(csrf, card, result);
     refreshColumn(from);
     refreshColumn(column);
     refreshProgress(result);
-    announce(`${card.dataset.title} moved to ${STATUS_LABELS[status]}.`);
+    announce(`${card.dataset.title} moved to ${result.labels[status]}.`);
 }
 
-// Badge, due date and buttons of a card after it changed column.
-function refreshCard(csrf, card) {
+// Badge, due date, buttons and drop targets of a card after it changed column.
+// result = the server's answer: the card's moves, targets and the column labels.
+function refreshCard(csrf, card, result) {
     const status = card.dataset.status;
+    const handedIn = status === 'review' || status === 'done';
+
+    card.dataset.targets = result.targets.join(' ');
+    if (result.targets.length) {
+        card.setAttribute('draggable', 'true');
+    } else {
+        card.removeAttribute('draggable');
+    }
 
     const badge = card.querySelector('.task-badge');
     if (status === 'done') {
         badge.className = 'badge badge-done task-badge';
         badge.textContent = 'Completed';
+    } else if (status === 'review') {
+        badge.className = 'badge badge-review task-badge';
+        badge.textContent = 'Waiting for approval';
     } else {
         badge.className = `badge badge-${card.dataset.priority} task-badge`;
         badge.textContent = card.dataset.priorityLabel;
@@ -174,7 +181,7 @@ function refreshCard(csrf, card) {
 
     const due = card.querySelector('.task-due');
     if (due) {
-        const late = card.dataset.late === '1' && status !== 'done';
+        const late = card.dataset.late === '1' && !handedIn;
         due.classList.toggle('overdue', late);
         due.textContent = (late ? 'Overdue · ' : 'Due ') + card.dataset.dueLabel;
     }
@@ -184,7 +191,7 @@ function refreshCard(csrf, card) {
         return;
     }
     actions.querySelectorAll('form').forEach((form) => form.remove());
-    MOVES[status].forEach(([to, label]) => {
+    result.moves.forEach(([to, label]) => {
         const form = document.createElement('form');
         form.method = 'post';
         form.action = 'api/update_task.php';
@@ -194,7 +201,7 @@ function refreshCard(csrf, card) {
         button.type = 'submit';
         button.className = 'btn-move';
         button.textContent = label;
-        button.setAttribute('aria-label', `Move “${card.dataset.title}” to ${STATUS_LABELS[to]}`);
+        button.setAttribute('aria-label', `Move “${card.dataset.title}” to ${result.labels[to]}`);
         form.append(button);
         actions.append(form);
     });

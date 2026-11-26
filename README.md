@@ -29,7 +29,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Sign up, log in and log out with three roles: Team Leader, Team Member, Professor | Everyone | Starter |
 | Create a project and get a unique invite code (`TS-XXXX`) | Team Leader | #1 |
 | Join a project with the invite code | Team Leader, Team Member | #2 |
-| Kanban board with To Do, In Progress and Done, overdue marking and a progress bar | Team members | #3 |
+| Kanban board with To Do, In Progress, Review and Done, overdue marking and a progress bar | Team members | #3 |
 | Add, edit and delete tasks with assignee, priority and due date | Team Leader | #4 |
 | Contribution report: tasks done, in progress and to do per member, as a bar chart and a table | Team members, Professor | #9 |
 | Professor dashboard: every team's progress and overdue tasks, read-only | Professor | #10 |
@@ -41,6 +41,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Login protection: 5 wrong passwords block that email for 15 minutes | Everyone | #33 |
 | Task comments: each task has its own page where the team discusses it; professors can read along | Team members, Professor | #37 |
 | Task history: the task page shows who added the task and who moved it to which column, and when | Team members, Professor | #58 |
+| Leader approval: a member moves a finished task to Review; only the leader approves it to Done, and the leader's dashboard lists what is waiting | Team Leader, Team members | #59 |
 
 
 ## Screenshots
@@ -129,7 +130,7 @@ The live demo runs on [InfinityFree](https://www.infinityfree.com) (free: PHP 8.
 
 **Updating the live site** after a pull request is merged:
 
-1. **Database first**, only if the change touched the database. A new table: import `database/online.sql` again; it adds the missing tables and keeps the others (only the demo data is replaced). A new column: run its `database/add_*.sql` file in phpMyAdmin (**SQL** tab). Done the other way round, the new code would look for a table that does not exist yet.
+1. **Database first**, only if the change touched the database. A new table or the new Review status: import `database/online.sql` again; it adds what is missing and keeps your data (only the demo data is replaced). A new column: run its `database/add_*.sql` file in phpMyAdmin (**SQL** tab). Done the other way round, the new code would look for a table that does not exist yet.
 2. **Files.** `git checkout main && git pull`, then `sh tools/online-zip.sh`. In the File Manager, open `htdocs` → **Upload** → **Zip & Extract** → `teamsync-online.zip`, and allow it to overwrite.
 3. **Check.** Open `https://teamsync-du.fwh.is/version.txt`. It names the commit that is online; it should be the latest commit on GitHub.
 
@@ -169,7 +170,7 @@ Teamsync/
 ├── dashboard.php         My projects and "Due soon"
 ├── create_project.php    New project with invite code
 ├── join_project.php      Join with an invite code
-├── board.php             Kanban board of one project
+├── board.php             Kanban board of one project (To Do, In Progress, Review, Done)
 ├── task.php              One task and its comments
 ├── task_form.php         Add, edit or delete a task (leader only)
 ├── report.php            Contribution report
@@ -209,7 +210,8 @@ Teamsync/
 │   ├── add_password_resets.sql  Adds the password reset table to an older database
 │   ├── add_login_attempts.sql   Adds the login protection table to an older database
 │   ├── add_task_comments.sql    Adds the task comments table to an older database
-│   └── add_task_history.sql     Adds the task history table to an older database
+│   ├── add_task_history.sql     Adds the task history table to an older database
+│   └── add_review_status.sql    Adds the Review status to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.4.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -231,7 +233,7 @@ Teamsync/
 | `users` | Everyone who can log in, with a role |
 | `projects` | One row per team project, with its invite code and leader |
 | `project_members` | Which user is in which project |
-| `tasks` | Tasks on the Kanban board: assignee, status, priority, due date, when the reminder was sent |
+| `tasks` | Tasks on the Kanban board: assignee, status (To Do, In Progress, Review, Done), priority, due date, when the reminder was sent |
 | `password_resets` | Open password reset links (only a hash of each link) |
 | `login_attempts` | Wrong-password tries of the last day, for the login block |
 | `task_comments` | Comments on tasks: who wrote what, and when |

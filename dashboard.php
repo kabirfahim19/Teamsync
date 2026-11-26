@@ -25,6 +25,8 @@ $projects = $stmt->fetchAll();
 // Deadline reminders: my unfinished tasks that are overdue or due within 2 days (Issue #11)
 require_once __DIR__ . '/includes/tasks.php';
 $dueSoon = get_due_soon($pdo, (int) $_SESSION['user_id'], 2);
+// Leaders: tasks their members handed in, waiting for approval (FR-30)
+$toApprove = $isLeader ? get_waiting_for_review($pdo, (int) $_SESSION['user_id']) : [];
 
 // Just created or joined a project? Find it in this user's own list (so nobody can see another team's code).
 function find_in_list(array $projects, string $param): ?array
@@ -72,6 +74,25 @@ require __DIR__ . '/includes/header.php';
             <p><b><?= e($created['title']) ?></b> was created. Share this invite code with your team:</p>
             <p class="invite-code"><?= e($created['invite_code']) ?></p>
         </div>
+    <?php endif; ?>
+
+    <?php if ($toApprove): ?>
+        <section class="card reminders approvals" aria-labelledby="approve-title">
+            <div class="chart-head">
+                <h2 id="approve-title">Waiting for your approval</h2>
+                <span class="count"><?= count($toApprove) ?> <?= count($toApprove) === 1 ? 'task' : 'tasks' ?></span>
+            </div>
+            <p class="muted small">Your members moved these to Review. Check the work, then Approve it on the board, or send it back.</p>
+            <ul class="due-list">
+                <?php foreach ($toApprove as $t): ?>
+                    <li>
+                        <span class="due-when"><?= e($t['assignee_name'] ?? 'Unassigned') ?></span>
+                        <a class="due-title" href="task.php?id=<?= (int) $t['task_id'] ?>"><?= e($t['title']) ?></a>
+                        <a class="due-project" href="board.php?project=<?= (int) $t['project_id'] ?>"><?= e($t['project_title']) ?> board</a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
     <?php endif; ?>
 
     <section class="card reminders" aria-labelledby="due-title">

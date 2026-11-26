@@ -2,6 +2,7 @@
 // One task and its comments (FR-28): task.php?id=ID
 // Members of the project read and write comments; the author or the team leader can delete one.
 // Professors can open every task and read its comments, read-only.
+// Under the comments: the task's history, who added it and who moved it where (FR-29).
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/projects.php';
 require_once __DIR__ . '/includes/tasks.php';
@@ -64,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $comments = get_comments($pdo, $taskId);
+$events   = get_task_events($pdo, $taskId);   // history (FR-29)
 $message  = ($_GET['msg'] ?? '') === 'deleted' ? 'Comment deleted.' : null;
 
 $priority = TASK_PRIORITIES[$task['priority']] ?? $task['priority'];
@@ -169,6 +171,23 @@ require __DIR__ . '/includes/header.php';
             </form>
         <?php elseif ($isProfessor): ?>
             <p class="muted small comment-readonly">Professors can read the comments but not write them.</p>
+        <?php endif; ?>
+    </section>
+
+    <section class="card history" aria-labelledby="history-title">
+        <h2 id="history-title">History</h2>
+        <?php if (!$events): ?>
+            <p class="muted small">No history yet. Moves made before the history was added are not shown.</p>
+        <?php else: ?>
+            <ol class="history-list">
+                <?php foreach ($events as $ev): ?>
+                    <li>
+                        <span class="dot dot-<?= e($ev['to_status']) ?>" aria-hidden="true"></span>
+                        <span><?= e(task_event_text($ev)) ?></span>
+                        <time class="muted small" datetime="<?= e(date('c', strtotime($ev['created_at']))) ?>"><?= e(comment_time($ev['created_at'])) ?></time>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
         <?php endif; ?>
     </section>
 </main>

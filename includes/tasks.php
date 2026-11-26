@@ -1,6 +1,8 @@
 <?php
 // Functions for tasks on the Kanban board. Used by board.php and api/update_task.php.
 
+require_once __DIR__ . '/history.php';
+
 const TASK_STATUSES = [
     'todo'        => 'To Do',
     'in_progress' => 'In Progress',
@@ -39,6 +41,22 @@ function get_tasks_by_status(PDO $pdo, int $projectId): array
 function can_move_task(array $task, int $userId, int $leaderId): bool
 {
     return $userId === $leaderId || $userId === (int) $task['assignee_id'];
+}
+
+// Moves a task to another column and writes the move into the task's history (FR-29).
+// Both are saved together or not at all.
+function move_task(PDO $pdo, int $taskId, string $from, string $to, int $userId): void
+{
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('UPDATE tasks SET status = ? WHERE task_id = ?');
+        $stmt->execute([$to, $taskId]);
+        add_task_event($pdo, $taskId, $userId, $from, $to);
+        $pdo->commit();
+    } catch (Throwable $ex) {
+        $pdo->rollBack();
+        throw $ex;
+    }
 }
 
 // Is the task late? (deadline before today and not finished)

@@ -80,6 +80,20 @@ CREATE TABLE IF NOT EXISTS task_comments (
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Task history (FR-29): who added each task and who moved it to which column, and when.
+-- If the account is deleted later, its lines stay with user_id NULL ("a deleted account").
+CREATE TABLE IF NOT EXISTS task_events (
+  event_id    INT AUTO_INCREMENT PRIMARY KEY,
+  task_id     INT         NOT NULL,
+  user_id     INT         NULL,
+  from_status VARCHAR(20) NULL,            -- NULL when the task was added
+  to_status   VARCHAR(20) NOT NULL,
+  created_at  DATETIME    NOT NULL,
+  INDEX (task_id, created_at),
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- 1. Remove old demo data (tasks and memberships go with their project)
 DELETE FROM projects WHERE leader_id IN (SELECT user_id FROM users WHERE email LIKE '%@demo.test');
 DELETE FROM users WHERE email LIKE '%@demo.test';
@@ -161,7 +175,25 @@ INSERT INTO tasks (project_id, assignee_id, title, status, priority, due_date) V
   (@p3, @ana,     'Favourite stops',       'todo',        'low',    @today + INTERVAL 7 DAY),
   (@p3, @hyunwoo, 'Test plan',             'todo',        'medium', @today + INTERVAL 5 DAY);
 
--- 6. Comments on Team 1 tasks (FR-28)
+-- 6. History (FR-29): each leader added the tasks two weeks ago; each member started and finished their own
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, p.leader_id, NULL, 'todo', TIMESTAMP(@today - INTERVAL 14 DAY, '10:00:00')
+FROM tasks t JOIN projects p ON p.project_id = t.project_id
+WHERE t.project_id IN (@p1, @p2, @p3);
+
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, t.assignee_id, 'todo', 'in_progress',
+       CASE WHEN t.status = 'done' THEN TIMESTAMP(t.due_date - INTERVAL 3 DAY, '14:00:00')
+            ELSE TIMESTAMP(@today - INTERVAL 2 DAY, '14:00:00') END
+FROM tasks t
+WHERE t.project_id IN (@p1, @p2, @p3) AND t.status IN ('in_progress', 'done');
+
+INSERT INTO task_events (task_id, user_id, from_status, to_status, created_at)
+SELECT t.task_id, t.assignee_id, 'in_progress', 'done', TIMESTAMP(t.due_date - INTERVAL 1 DAY, '18:00:00')
+FROM tasks t
+WHERE t.project_id IN (@p1, @p2, @p3) AND t.status = 'done';
+
+-- 7. Comments on Team 1 tasks (FR-28)
 SET @cart  = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Order cart and checkout');
 SET @tests = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Write test cases');
 SET @uml   = (SELECT task_id FROM tasks WHERE project_id = @p1 AND title = 'Draw the UML class diagram');

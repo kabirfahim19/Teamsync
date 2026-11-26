@@ -40,6 +40,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Forgot password: a reset link by email that works once, for one hour | Everyone | #31 |
 | Login protection: 5 wrong passwords block that email for 15 minutes | Everyone | #33 |
 | Task comments: each task has its own page where the team discusses it; professors can read along | Team members, Professor | #37 |
+| Task history: the task page shows who added the task and who moved it to which column, and when | Team members, Professor | #58 |
 
 
 ## Screenshots
@@ -190,6 +191,7 @@ Teamsync/
 │   ├── password_resets.php  Password reset links (FR-26)
 │   ├── login_guard.php   Blocks password guessing (FR-27)
 │   ├── comments.php      Task comments (FR-28)
+│   ├── history.php       Task history: who moved a task, and when (FR-29)
 │   ├── reports.php       Contribution numbers
 │   ├── header.php
 │   └── footer.php
@@ -199,14 +201,15 @@ Teamsync/
 ├── lib/
 │   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
-│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts, task_comments
+│   ├── schema.sql        Tables: users, projects, project_members, tasks, password_resets, login_attempts, task_comments, task_events
 │   ├── sample_tasks.sql  Optional sample tasks
 │   ├── demo_data.sql     Optional demo teams for presentations and testing
 │   ├── online.sql        Every table plus the demo data, for web hosting (no CREATE DATABASE)
 │   ├── add_reminders.sql Adds the reminder column to an older database
 │   ├── add_password_resets.sql  Adds the password reset table to an older database
 │   ├── add_login_attempts.sql   Adds the login protection table to an older database
-│   └── add_task_comments.sql    Adds the task comments table to an older database
+│   ├── add_task_comments.sql    Adds the task comments table to an older database
+│   └── add_task_history.sql     Adds the task history table to an older database
 ├── docs/
 │   ├── Teamsync-Requirements-v1.4.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
@@ -232,6 +235,7 @@ Teamsync/
 | `password_resets` | Open password reset links (only a hash of each link) |
 | `login_attempts` | Wrong-password tries of the last day, for the login block |
 | `task_comments` | Comments on tasks: who wrote what, and when |
+| `task_events` | Task history: who added each task and who moved it, from which column to which, and when |
 
 ## How we work
 

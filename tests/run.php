@@ -789,6 +789,62 @@ db_test('FR-28  the task page gets the task with its assignee', function (PDO $p
 });
 
 
+group('Task history (FR-29)');
+
+db_test('FR-29  adding a task and every move are written into its history, oldest first', function (PDO $pdo) {
+    $t = make_team($pdo);
+    $id = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout');
+    add_task_event($pdo, $id, $t['leader'], null, 'todo');
+    move_task($pdo, $id, 'todo', 'in_progress', $t['minji']);
+    move_task($pdo, $id, 'in_progress', 'done', $t['leader']);
+    check_same('done', value($pdo, 'SELECT status FROM tasks WHERE task_id = ?', [$id]), 'the task itself moved');
+    check_same([
+        'Yuna Park added the task',
+        'Minji Lee moved it from To Do to In Progress',
+        'Yuna Park moved it from In Progress to Done',
+    ], array_map('task_event_text', get_task_events($pdo, $id)));
+});
+
+db_test('FR-29  each line has the time it happened (Korean time, from PHP)', function (PDO $pdo) {
+    $t = make_team($pdo);
+    $id = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout');
+    $before = date('Y-m-d H:i:s');
+    move_task($pdo, $id, 'todo', 'in_progress', $t['minji']);
+    $at = get_task_events($pdo, $id)[0]['created_at'];
+    check($at >= $before && $at <= date('Y-m-d H:i:s'), "time $at is not now");
+    check(str_starts_with(comment_time($at), 'Today, '), 'shown as "Today, …"');
+});
+
+db_test('FR-29  a deleted account\'s lines stay in the history, without its name', function (PDO $pdo) {
+    $t = make_team($pdo);
+    $id = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout', 'in_progress');
+    move_task($pdo, $id, 'in_progress', 'done', $t['minji']);
+    $pdo->prepare('DELETE FROM users WHERE user_id = ?')->execute([$t['minji']]);
+    check_same(['A deleted account moved it from In Progress to Done'], array_map('task_event_text', get_task_events($pdo, $id)));
+});
+
+db_test('FR-29  deleting a task deletes its history', function (PDO $pdo) {
+    $t = make_team($pdo);
+    $id = add_task($pdo, $t['pid'], $t['minji'], 'Menu page layout');
+    move_task($pdo, $id, 'todo', 'in_progress', $t['minji']);
+    delete_task($pdo, $id);
+    check_same(0, (int) value($pdo, 'SELECT COUNT(*) FROM task_events WHERE task_id = ?', [$id]));
+});
+
+test('FR-29  every move goes through move_task(), so no move is missing from the history', function () {
+    $bad = [];
+    foreach (app_pages() + ['includes/projects.php' => APP_DIR . '/includes/projects.php', 'includes/reports.php' => APP_DIR . '/includes/reports.php'] as $relative => $path) {
+        if (preg_match('/UPDATE\s+tasks\s+SET\s+status/i', file_get_contents($path))) {
+            $bad[] = $relative;
+        }
+    }
+    check($bad === [], 'changes a status without writing the history: ' . implode(', ', $bad));
+    check(str_contains(file_get_contents(APP_DIR . '/api/update_task.php'), 'move_task('), 'api/update_task.php must use move_task()');
+    check((bool) preg_match('/\$newId = create_task\(.*\n\s*add_task_event\(\$pdo, \$newId/', file_get_contents(APP_DIR . '/task_form.php')),
+          'task_form.php must write "added the task" into the history');
+});
+
+
 group('Login session cookie (#48)');
 
 test('#48  the session cookie is HttpOnly and SameSite=Lax', function () {

@@ -81,3 +81,17 @@ CREATE TABLE IF NOT EXISTS task_comments (
   FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Task history (FR-29): who added each task and who moved it to which column, and when.
+-- If the account is deleted later, its lines stay with user_id NULL ("a deleted account").
+CREATE TABLE IF NOT EXISTS task_events (
+  event_id    INT AUTO_INCREMENT PRIMARY KEY,
+  task_id     INT         NOT NULL,
+  user_id     INT         NULL,
+  from_status VARCHAR(20) NULL,            -- NULL when the task was added
+  to_status   VARCHAR(20) NOT NULL,
+  created_at  DATETIME    NOT NULL,
+  INDEX (task_id, created_at),
+  FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB;

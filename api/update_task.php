@@ -40,7 +40,7 @@ if (!array_key_exists($status, TASK_STATUSES)) {
 }
 
 $stmt = $pdo->prepare(
-    'SELECT t.task_id, t.project_id, t.assignee_id, p.leader_id
+    'SELECT t.task_id, t.project_id, t.assignee_id, t.status, p.leader_id
      FROM tasks t JOIN projects p ON p.project_id = t.project_id
      WHERE t.task_id = ?'
 );
@@ -57,8 +57,9 @@ if (!can_move_task($task, $userId, (int) $task['leader_id'])) {
     reply(403, 'Only the person assigned to this task or the team leader can move it.', $wantsJson);
 }
 
-$stmt = $pdo->prepare('UPDATE tasks SET status = ? WHERE task_id = ?');
-$stmt->execute([$status, $taskId]);
+if ($task['status'] !== $status) {
+    move_task($pdo, $taskId, $task['status'], $status, $userId);   // also writes the task's history
+}
 
 if ($wantsJson) {
     $stmt = $pdo->prepare("SELECT COUNT(*) AS total, SUM(status = 'done') AS done FROM tasks WHERE project_id = ?");

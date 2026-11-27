@@ -18,7 +18,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Name | Student ID | Role in the project |
 |---|---|---|
 | Kabir Md Fahim | 20244154 | Team Leader, Scrum Master, developer |
-| Miraj Md | 20244166 | UML and ER diagrams |
+| Miraj Md | 20244166 | Team member |
 | Fahim Iftekhar Zaman | 20244229 | Test cases and testing |
 | Hossain Md Fahim Al | 20244220 | Presentation slides and user guide |
 
@@ -219,6 +219,7 @@ Teamsync/
 │   ├── Teamsync-Requirements-v1.5.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
 │   ├── nfr-checks.md                    Results of the non-functional requirement checks
+│   ├── diagrams/                        Use case, class, sequence and ER diagrams
 │   └── screenshots/
 ├── tests/
 │   ├── run.php           Automated tests: php tests/run.php
@@ -245,7 +246,7 @@ Teamsync/
 
 ## How we work
 
-We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.5.pdf`](docs/Teamsync-Requirements-v1.5.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
+We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.5.pdf`](docs/Teamsync-Requirements-v1.5.pdf). The use case, class, sequence and ER diagrams are in [`docs/diagrams/`](docs/diagrams/). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
 
 Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each issue:
 

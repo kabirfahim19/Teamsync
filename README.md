@@ -9,7 +9,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 
 **Live demo:** https://teamsync-du.fwh.is (sample data; log in as `alex@demo.test`, `minji@demo.test` or `prof@demo.test`, password `demo1234`)
 
-**Status:** All 28 functional requirements and all 11 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for team testing, diagrams, slides and the user guide.
+**Status:** All 31 functional requirements and all 12 user stories are merged into `main`. The rest of Sprint 3 (until Nov 30) is for team testing, diagrams, slides and the user guide.
 
 ![Kanban board](docs/screenshots/board.png)
 
@@ -216,7 +216,7 @@ Teamsync/
 │   ├── add_review_status.sql    Adds the Review status to an older database
 │   └── add_handins.sql          Adds the hand-in table to an older database
 ├── docs/
-│   ├── Teamsync-Requirements-v1.4.pdf   Software Requirements Specification
+│   ├── Teamsync-Requirements-v1.5.pdf   Software Requirements Specification
 │   ├── sprint-reviews.md                Sprint reviews and retrospectives
 │   ├── nfr-checks.md                    Results of the non-functional requirement checks
 │   └── screenshots/
@@ -245,7 +245,7 @@ Teamsync/
 
 ## How we work
 
-We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.4.pdf`](docs/Teamsync-Requirements-v1.4.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
+We use **Scrum** with one-week sprints. Requirements, user stories, use cases and the traceability table are in [`docs/Teamsync-Requirements-v1.5.pdf`](docs/Teamsync-Requirements-v1.5.pdf). What we learned after each sprint is in [`docs/sprint-reviews.md`](docs/sprint-reviews.md).
 
 Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each issue:
 
@@ -281,7 +281,7 @@ Sprints 1 and 2 took far less time than planned, so Sprint 3 started early, on N
 | 0 | Nov 3 – 9 | Nov 8 | Setup, sign-up, login, roles | Done |
 | 1 | Nov 10 – 16 | Nov 10 | Projects, invite codes, board, tasks | Done |
 | 2 | Nov 17 – 23 | Nov 11 – 12 | Contribution report, professor view, due-soon list, drag-and-drop | Done |
-| 3 | Nov 24 – 30 | Nov 13 – 30 | Nov 13 – 16: online site, professor code, email reminders, password reset, login protection, automated tests, task comments<br>Nov 17 – 25: SRS v1.4, non-functional checks, session cookie and security headers<br>Nov 24 – 30: team testing, UML and ER diagrams, slides, user guide | In progress |
+| 3 | Nov 24 – 30 | Nov 13 – 30 | Nov 13 – 16: online site, professor code, email reminders, password reset, login protection, automated tests, task comments<br>Nov 17 – 25: SRS v1.4, non-functional checks, session cookie and security headers<br>Nov 25 – 27: one-zip deploy, task history, leader approval, hand-in links, SRS v1.5<br>Nov 24 – 30: team testing, UML and ER diagrams, slides, user guide | In progress |
 | Week 14 | Dec 1 – 7 | | Final presentation and demo | – |
 
 Sprint reviews and retrospectives: [`docs/sprint-reviews.md`](docs/sprint-reviews.md).

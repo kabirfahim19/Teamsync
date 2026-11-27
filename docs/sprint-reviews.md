@@ -1,8 +1,8 @@
 # Teamsync – Sprint Reviews and Retrospectives
 
-Sprints 0 to 2 are done and Sprint 3 is under way: all 28 functional requirements and all 11 user stories are merged into `main`, and the app runs online at https://teamsync-du.fwh.is. What is left of Sprint 3 is the FR-19 email test, manual testing, diagrams and slides.
+Sprints 0 to 2 are done and Sprint 3 is under way: all 31 functional requirements and all 12 user stories are merged into `main`, and the app runs online at https://teamsync-du.fwh.is. What is left of Sprint 3 is manual testing, the timed usability test, diagrams, slides and the user guide.
 
-Requirements: `docs/Teamsync-Requirements-v1.4.pdf` (SRS v1.4, Nov 18, 2026). All 28 functional requirements are done.
+Requirements: `docs/Teamsync-Requirements-v1.5.pdf` (SRS v1.5, Nov 27, 2026). All 31 functional requirements are done.
 
 ## Summary
 
@@ -11,7 +11,7 @@ Requirements: `docs/Teamsync-Requirements-v1.4.pdf` (SRS v1.4, Nov 18, 2026). Al
 | 0 | Nov 3 – Nov 9 | Setup, sign-up, login, roles | Starter commit | Nov 8 |
 | 1 | Nov 10 – Nov 16 | Projects, invite codes, Kanban board, tasks | #1 (#5), #2 (#6), #3 (#7), #4 (#8) | Nov 10 |
 | 2 | Nov 17 – Nov 23 | Contribution report, professor view, reminders, drag-and-drop | #9 (#16), #10 (#17), #11 (#18), #12 (#19) | Nov 11 – Nov 12 |
-| 3 | Nov 24 – Nov 30 | Online site, professor code, email reminders, password reset, login protection, automated tests, task comments; testing, UML/ER update, final slides | #25 (#26), #28 (#30), #31 (#32), #33 (#34), #35 (#36), #38 (#37); #13, #14, #15 open | Nov 13 – 15 (code) |
+| 3 | Nov 24 – Nov 30 | Online site, professor code, email reminders, password reset, login protection, automated tests, task comments; testing, UML/ER update, final slides | #25 (#26), #28 (#30), #31 (#32), #33 (#34), #35 (#36), #38 (#37), #48 (#49), #50 (#51), #54 (#55), #56 (#57), #58 (#60), #59 (#61), #62 (#63); #13, #14, #15 open | Nov 13 – 26 (code) |
 
 Sprints 1 and 2 finished well before their planned dates, so Sprint 3 started early, on Nov 13.
 
@@ -104,6 +104,32 @@ Not done: FR-19 (email one day before the due date). It is a *Could*, and XAMPP 
 | Breaking the code on purpose made the automated tests fail, so the tests really catch mistakes | GitHub refused to push the test workflow: the access token had no `workflow` permission | Added the `workflow` scope to the token |
 | Comments went online in two steps (database first, then files), so the live board never broke | A pull request was opened before its issue, so it took the issue's number (#37) | Open the issue first, then the branch and the pull request |
 | | The reset email did not arrive at first | A one-off mail check script showed that sending worked: the account existed only on XAMPP, not online. Both emails reached Gmail on Nov 18 |
+
+---
+
+## Sprint 3 – Nov 17 to Nov 27
+
+**Review**
+
+- #44 Non-functional checks against SRS v1.4: 14 of 16 pass; the comment Delete buttons were made 40 px tall (#45); `main` now needs green tests to merge (#46); Safari checked (#47). Results in `docs/nfr-checks.md`
+- #48 Login session cookie: HttpOnly, SameSite=Lax, Secure on https, strict session IDs (#49)
+- #50 Security headers: Content-Security-Policy, no framing, nosniff (#51)
+- #54 One zip for the live site (`tools/online-zip.sh`) and demo data that uses the Korean date, so `online.sql` can be imported at any time of day (#55)
+- #56 A browser whose account was deleted or changed is logged out at its next click (#57)
+- #58 Task history: the task page shows who added the task and who moved it where, and when – FR-29 (#60)
+- #59 Leader approval: members move finished tasks to Review; only the leader moves a task into Done or out of it, and the leader's dashboard lists what is waiting – FR-30 (#61)
+- #62 Hand-in link: moving a task to Review needs a link to the work, posted as a comment and shown in the approval list; links in comments are clickable – FR-31 (#63)
+- The team joined our own project on the live site, and each member's Sprint 3 work is a card on its board
+- SRS v1.5 (Nov 27): FR-29 to FR-31, US-12, UC-11, TC-29 to TC-31; 97 automated tests
+
+**Retrospective**
+
+| Went well | Went wrong | Change |
+| --- | --- | --- |
+| Running our own Sprint 3 in Teamsync showed a real gap: a member could drag unfinished work to Done. History, approval and hand-in links fixed it in one day | Importing the demo data again left an old browser logged in to an account that no longer existed | The account behind every session is checked on each request (#56) |
+| Each new rule came with its tests first, so the stale-session bug was shown failing before it was fixed | `version.txt` showed an old commit after an upload | It was the browser cache: hard refresh (Cmd+Shift+R) or add `?x=1` to the address |
+| Database changes went online first and the files second, so the live board never broke | The database file and the zip were confused in the host's File Manager | `online.sql` goes to phpMyAdmin (Import), the zip goes to the File Manager; the README lists the order |
+| | A pull request description was posted as an issue comment | Open the pull request from `github.com/<owner>/<repo>/pull/new/<branch>` |
 
 ---
 

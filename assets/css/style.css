@@ -197,6 +197,7 @@ input:focus, select:focus, .btn:focus-visible {
 .btn-secondary { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
 .btn-secondary:hover { background: var(--paper-2); color: var(--navy); }
 .head-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn[hidden] { display: none; }   /* "Install the app" stays hidden until the browser offers it */
 .code-input { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
 .code-input::placeholder { text-transform: none; letter-spacing: normal; font-weight: 400; }
 

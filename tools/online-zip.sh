@@ -15,9 +15,9 @@ cd "$(dirname "$0")/.."
 out="${1:-$HOME/Downloads/teamsync-online.zip}"
 case "$out" in /*) ;; *) out="$PWD/$out" ;; esac
 
-# Everything the live site needs. A new top-level folder must be added here too
+# Everything the live site needs. A new top-level folder or file must be added here too
 # (the test "tools/online-zip.sh packs every file the pages load" checks this).
-APP_FILES="$(git ls-files '*.php' | grep -v /) favicon.ico api assets includes lib"
+APP_FILES="$(git ls-files '*.php' | grep -v /) favicon.ico manifest.json sw.js offline.html api assets includes lib"
 
 if [ -n "$(git status --porcelain -- $APP_FILES)" ]; then
     echo "Note: you have changes that are not committed yet. The zip has your last commit only."

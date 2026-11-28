@@ -13,7 +13,40 @@ document.addEventListener('DOMContentLoaded', () => {
     initBoardDragAndDrop();
     initProfessorCodeField();
     sendDueReminders();
+    initInstallApp();
 });
+
+// Install Teamsync as an app on a phone or computer (#68).
+// sw.js lets the browser offer "Install" and shows offline.html when there is no connection.
+// Chrome, Edge and Android also tell the page when Teamsync can be installed: then the dashboard
+// shows its "Install the app" button. On an iPhone: Share, then "Add to Home Screen".
+function initInstallApp() {
+    if ('serviceWorker' in navigator && window.isSecureContext) {   // https, or localhost on XAMPP
+        navigator.serviceWorker.register('sw.js').catch(() => {});   // without it the site works as before
+    }
+    const button = document.querySelector('[data-install-app]');
+    if (!button) {
+        return;   // other pages: the browser shows its own install offer
+    }
+    let offer = null;
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();   // our button instead of the browser's bar
+        offer = event;
+        button.hidden = false;
+    });
+    window.addEventListener('appinstalled', () => {
+        offer = null;
+        button.hidden = true;
+    });
+    button.addEventListener('click', () => {
+        if (!offer) {
+            return;
+        }
+        button.hidden = true;   // an offer can be used once
+        offer.prompt();
+        offer = null;
+    });
+}
 
 // Dashboard: ask the server to email reminders for tasks due soon (FR-19).
 // Runs in the background; the page does not wait for it and shows nothing.

@@ -43,6 +43,7 @@ Teamsync is a web application where a student team can plan, assign and track it
 | Task history: the task page shows who added the task and who moved it to which column, and when | Team members, Professor | #58 |
 | Leader approval: a member moves a finished task to Review; only the leader approves it to Done, and the leader's dashboard lists what is waiting | Team Leader, Team members | #59 |
 | Hand-in with a link: moving a task to Review asks for a link to the work (pull request, Drive file); it is posted as a comment and shown in the leader's approval list. Links in comments are clickable | Team members, Team Leader | #62 |
+| Install as an app: add Teamsync to a phone's home screen or a computer, open it without the browser bar, and see an offline page when there is no connection | Everyone | #68 |
 
 
 ## Screenshots
@@ -104,6 +105,7 @@ The screenshots use sample data.
 5. Click a task's title to open it and **write a comment**. The card on the board shows how many comments it has.
 6. Open the **Contribution report** from the board.
 7. Sign up as a Professor to see **All teams**, then open any board, task or report (read-only).
+8. **Install it as an app** (needs https, so the live site, or `localhost` on XAMPP). Android or a computer with Chrome or Edge: the dashboard's **Install the app** button, or the browser menu → *Install app*. iPhone (Safari): **Share** → *Add to Home Screen*. Teamsync then opens from its own icon, without the browser bar.
 
 ## Put it online
 
@@ -128,6 +130,7 @@ The live demo runs on [InfinityFree](https://www.infinityfree.com) (free: PHP 8.
 | No scheduled jobs (cron) | Opening the dashboard sends the due reminders in the background |
 | The database clock is in another time zone | Every date comes from PHP in Korean time, never from the database. The demo data uses the Korean date too, so `online.sql` can be imported at any time of day |
 | A security check can answer with a web page instead of JSON | Drag-and-drop shows a clear message instead of failing silently |
+| That check also answers requests that come without the host's cookie | The app manifest is fetched with the cookie (`crossorigin="use-credentials"`), so phones can install the app |
 
 **Updating the live site** after a pull request is merged:
 
@@ -141,7 +144,7 @@ Always upload the whole zip, never single files. One missing file (for example a
 
 ## Testing
 
-**Automated tests** check the app's rules without a browser: invite codes, task checks, who may move a task, overdue and due-soon dates, email reminders, the contribution report, password reset links, the login block and the security headers. Each test names its requirement or test case from the SRS, for example `TC-07` or `FR-27`.
+**Automated tests** check the app's rules without a browser: invite codes, task checks, who may move a task, overdue and due-soon dates, email reminders, the contribution report, password reset links, the login block, the security headers and the installable app. Each test names its requirement or test case from the SRS, for example `TC-07` or `FR-27`.
 
 Run them from the Teamsync folder:
 
@@ -155,7 +158,7 @@ The tests build a new SQLite database in memory, so they never touch your MySQL 
 
 When you add a table or a column to `database/schema.sql`, add it to `tests/sqlite_schema.sql` too. A test checks that the two files match.
 
-**Manual tests:** the pages themselves (forms, HTTP 403 answers, drag-and-drop) are tested by hand with test cases TC-01 to TC-28 in the SRS.
+**Manual tests:** the pages themselves (forms, HTTP 403 answers, drag-and-drop) are tested by hand with test cases TC-01 to TC-31 in the SRS.
 
 **Non-functional checks:** speed, security, permissions, accessibility and browser support (NFR-01 to NFR-16) were checked on Nov 20, 2026. The results are in [`docs/nfr-checks.md`](docs/nfr-checks.md).
 
@@ -177,6 +180,9 @@ Teamsync/
 ├── report.php            Contribution report
 ├── professor.php         All teams (professor only)
 ├── favicon.ico           The Teamsync logo in the browser tab
+├── manifest.json         Name, colours and icons for installing Teamsync as an app
+├── sw.js                 Service worker: shows offline.html when there is no connection, never keeps team data
+├── offline.html          The page shown without a connection
 ├── api/
 │   ├── update_task.php   Moves a task; used by the buttons and by drag-and-drop
 │   └── send_reminders.php  Sends due email reminders; the dashboard calls it in the background
@@ -200,7 +206,8 @@ Teamsync/
 │   └── footer.php
 ├── assets/
 │   ├── css/style.css
-│   └── js/app.js         Delete confirmation, drag-and-drop, hand-in box, sign-up form, reminder call
+│   ├── icons/            App icons for phones and computers (192, 512, maskable, iPhone)
+│   └── js/app.js         Delete confirmation, drag-and-drop, hand-in box, sign-up form, reminder call, install button
 ├── lib/
 │   └── PHPMailer/        Sends email over SMTP (LGPL 2.1, unchanged)
 ├── database/
@@ -272,6 +279,7 @@ Every user story is a GitHub **Issue** on the *Teamsync Sprint Board*. For each 
 - Signing up as Professor needs a secret code set in `config/db.php`
 - Password reset links are random, stored only as a hash, work once and expire after one hour; the page never tells whether an email has an account
 - Mail and database passwords stay in `config/db.php`, which is never uploaded to GitHub
+- The installed app's service worker keeps only the offline page and its style sheet. Pages, boards and API answers always come from the server, so no team data is stored on a phone
 
 ## Schedule
 

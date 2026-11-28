@@ -1284,6 +1284,99 @@ test('FR-26  links in emails use $SITE_URL, or the address of the running site',
 });
 
 
+group('Install Teamsync as an app (#68)');
+
+// manifest.json as an array
+function app_manifest(): array
+{
+    $manifest = json_decode((string) file_get_contents(APP_DIR . '/manifest.json'), true);
+    check(is_array($manifest), 'manifest.json is not valid JSON');
+    return $manifest;
+}
+
+// The files sw.js keeps for the offline page: const OFFLINE_FILES = [OFFLINE_PAGE, 'a', 'b'];
+function offline_files(): array
+{
+    $sw = file_get_contents(APP_DIR . '/sw.js');
+    check((bool) preg_match("/const OFFLINE_PAGE = '([^']+)';/", $sw, $page), 'OFFLINE_PAGE not found in sw.js');
+    check((bool) preg_match('/const OFFLINE_FILES = \[([^\]]*)\];/', $sw, $list), 'OFFLINE_FILES not found in sw.js');
+    preg_match_all("/'([^']+)'/", $list[1], $files);
+    return array_merge(str_contains($list[1], 'OFFLINE_PAGE') ? [$page[1]] : [], $files[1]);
+}
+
+test('#68  the manifest names the app, opens the dashboard and runs without the browser bar', function () {
+    $manifest = app_manifest();
+    check_same('Teamsync', $manifest['name'] ?? null, 'name');
+    check_same('Teamsync', $manifest['short_name'] ?? null, 'short_name (the name under the icon)');
+    check_same('standalone', $manifest['display'] ?? null, 'display');
+    check_same('./', $manifest['scope'] ?? null, 'scope (relative, so XAMPP\'s /Teamsync/ works too)');
+    $start = $manifest['start_url'] ?? '';
+    check(!str_starts_with($start, '/') && is_file(APP_DIR . '/' . strtok($start, '?')), "start_url \"$start\" is not a page of the app");
+    $header = file_get_contents(APP_DIR . '/includes/header.php');
+    check(str_contains($header, '<meta name="theme-color" content="' . ($manifest['theme_color'] ?? '') . '">'), 'theme_color differs from the theme-color in includes/header.php');
+});
+
+test('#68  every icon exists with the size the manifest says, with a 192, a 512 and a maskable one', function () {
+    $kinds = [];
+    foreach (app_manifest()['icons'] ?? [] as $icon) {
+        $path = APP_DIR . '/' . $icon['src'];
+        check(is_file($path), "{$icon['src']} is missing");
+        $size = getimagesize($path);
+        check($size !== false && $size[2] === IMAGETYPE_PNG, "{$icon['src']} is not a PNG");
+        check_same($icon['sizes'], $size[0] . 'x' . $size[1], $icon['src']);
+        $kinds[] = ($icon['purpose'] ?? 'any') . ' ' . $icon['sizes'];
+    }
+    foreach (['any 192x192', 'any 512x512', 'maskable 512x512'] as $kind) {
+        check(in_array($kind, $kinds, true), "no $kind icon");
+    }
+});
+
+test('#68  every page links the manifest (with the host\'s cookie) and the iPhone icon', function () {
+    $header = file_get_contents(APP_DIR . '/includes/header.php');
+    check(str_contains($header, '<link rel="manifest" href="manifest.json" crossorigin="use-credentials">'), 'the manifest link is missing or has no crossorigin="use-credentials"');
+    check((bool) preg_match('/<link rel="apple-touch-icon" href="([^"]+)">/', $header, $m), 'no apple-touch-icon');
+    $size = getimagesize(APP_DIR . '/' . $m[1]);
+    check($size !== false && $size[0] === 180 && $size[1] === 180, $m[1] . ' must be 180 x 180');
+});
+
+test('#68  the service worker never keeps pages or API answers, only the offline page and its files', function () {
+    $sw = file_get_contents(APP_DIR . '/sw.js');
+    check(str_contains($sw, "request.method !== 'GET'"), 'sw.js must leave forms and moves (POST) to the browser');
+    check(substr_count($sw, '.addAll(OFFLINE_FILES)') === 1 && !str_contains($sw, '.put('), 'sw.js may only store OFFLINE_FILES');
+    check(str_contains($sw, 'fetch(request).catch('), 'pages must come from the server first');
+    foreach (offline_files() as $file) {
+        check(is_file(APP_DIR . '/' . $file), "$file in OFFLINE_FILES does not exist");
+        check(!str_ends_with($file, '.php') && !str_starts_with($file, 'api/'), "$file must not be stored on the phone");
+    }
+});
+
+test('#68  the offline page works offline: every file it loads is kept by the service worker', function () {
+    $html = file_get_contents(APP_DIR . '/offline.html');
+    preg_match_all('/<(?:link|script|img)\b[^>]*\b(?:href|src)="([^"]+)"/i', $html, $loads);
+    check(count($loads[1]) >= 2, 'could not read what offline.html loads');
+    $kept = offline_files();
+    check(in_array('offline.html', $kept, true), 'offline.html is not kept by sw.js');
+    foreach ($loads[1] as $file) {
+        check(in_array($file, $kept, true), "offline.html loads $file, but sw.js does not keep it");
+    }
+    check(!preg_match('/<script\b(?![^>]*\bsrc=)/i', $html) && !preg_match('/\son[a-z]+\s*=/i', $html), 'offline.html must not have inline scripts');
+});
+
+test('#68  app.js registers the service worker, and the install button starts hidden', function () {
+    check(str_contains(file_get_contents(APP_DIR . '/assets/js/app.js'), "navigator.serviceWorker.register('sw.js')"), 'app.js does not register sw.js');
+    check((bool) preg_match('/<button\b[^>]*\bdata-install-app\b[^>]*\bhidden\b/', file_get_contents(APP_DIR . '/dashboard.php')), 'the dashboard\'s "Install the app" button must start hidden');
+    check(str_contains(file_get_contents(APP_DIR . '/assets/css/style.css'), '.btn[hidden] { display: none; }'), '.btn would show a hidden button');
+});
+
+test('#68  tools/online-zip.sh packs the manifest, the service worker and the offline page', function () {
+    preg_match('/^APP_FILES="(.+)"$/m', file_get_contents(APP_DIR . '/tools/online-zip.sh'), $m);
+    $packed = preg_split('/\s+/', $m[1] ?? '');
+    foreach (['manifest.json', 'sw.js', 'offline.html', 'assets'] as $file) {
+        check(in_array($file, $packed, true), "$file is not in APP_FILES");
+    }
+});
+
+
 group('Project files');
 
 test('tests/sqlite_schema.sql has the same tables and columns as database/schema.sql', function () {

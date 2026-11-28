@@ -56,6 +56,8 @@ require __DIR__ . '/includes/header.php';
             <p class="muted">You are logged in as <b><?= e(role_label($_SESSION['role'])) ?></b>.</p>
         </div>
         <div class="head-actions">
+            <?php // Shown by assets/js/app.js when the browser can install Teamsync as an app ?>
+            <button type="button" class="btn btn-secondary btn-inline" data-install-app hidden>Install the app</button>
             <?php if ($canJoin): ?>
                 <a class="btn <?= $isLeader ? 'btn-secondary' : 'btn-primary' ?> btn-inline" href="join_project.php">Join project</a>
             <?php endif; ?>

@@ -1,6 +1,10 @@
 <?php
 // Top of every page. Set $pageTitle before including this file.
 // Set $authLayout = true on the login and sign-up pages.
+//
+// The manifest, theme colour and touch icon let a phone or computer install Teamsync as an app (#68).
+// crossorigin="use-credentials": the free host answers a request without its cookie with a check page
+// instead of the file, and browsers fetch the manifest without cookies unless told to send them.
 $pageTitle  = $pageTitle ?? 'Teamsync';
 $authLayout = $authLayout ?? false;
 ?>
@@ -11,6 +15,12 @@ $authLayout = $authLayout ?? false;
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($pageTitle) ?> · Teamsync</title>
     <link rel="icon" href="favicon.ico">
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+    <meta name="theme-color" content="#16213A">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-title" content="Teamsync">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
     <link rel="stylesheet" href="assets/css/style.css">
